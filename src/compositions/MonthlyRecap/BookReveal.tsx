@@ -45,16 +45,14 @@ export const BookReveal: React.FC<BookRevealProps> = ({ book, index }) => {
     ? countUp(frame, 45, 25, book.rating.average * 10) / 10
     : 0
 
-  // Stars pop in
-  const starsProgress = spring({
-    frame: frame - 50,
-    fps,
-    config: { damping: 12, stiffness: 200, mass: 0.4 },
-  })
+  // Stars slam down one at a time
+  const starStartFrame = 50
+  const starDelay = 4 // frames between each star
 
-  // Status badge
+  // Status badge (after all stars have landed)
+  const badgeStartFrame = starStartFrame + 5 * starDelay + 5
   const badgeScale = spring({
-    frame: frame - 55,
+    frame: frame - badgeStartFrame,
     fps,
     config: { damping: 10, stiffness: 300, mass: 0.3 },
   })
@@ -201,15 +199,40 @@ export const BookReveal: React.FC<BookRevealProps> = ({ book, index }) => {
                   marginTop: 20,
                 }}
               >
-                {/* Stars */}
+                {/* Stars - slam down one at a time */}
                 <div
                   style={{
+                    display: 'flex',
                     fontSize: 40,
-                    transform: `scale(${starsProgress})`,
                   }}
                 >
-                  {'⭐'.repeat(stars)}
-                  {'☆'.repeat(5 - stars)}
+                  {Array.from({ length: 5 }).map((_, i) => {
+                    const isFilled = i < stars
+                    const starFrame = starStartFrame + i * starDelay
+
+                    const starProgress = spring({
+                      frame: frame - starFrame,
+                      fps,
+                      config: { damping: 12, stiffness: 300, mass: 0.5 },
+                    })
+
+                    const translateY = interpolate(starProgress, [0, 1], [-80, 0])
+                    const opacity = interpolate(starProgress, [0, 0.3, 1], [0, 1, 1])
+                    const scale = interpolate(starProgress, [0, 0.8, 1], [0.5, 1.2, 1])
+
+                    return (
+                      <span
+                        key={i}
+                        style={{
+                          display: 'inline-block',
+                          transform: `translateY(${translateY}px) scale(${scale})`,
+                          opacity,
+                        }}
+                      >
+                        {isFilled ? '⭐' : '☆'}
+                      </span>
+                    )
+                  })}
                 </div>
 
                 {/* Numeric rating */}
