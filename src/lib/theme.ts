@@ -57,9 +57,9 @@ export const TIMING = {
   bookSlideIn: 12, // 0.4s
   bookTitleType: 20, // ~0.67s
   bookRatingCount: 30, // 1s
-  bookHold: 30, // 1s
-  bookFadeOut: 8, // ~0.27s
-  bookTotal: 90, // 3s
+  bookHold: 90, // 3s hold after fully revealed
+  bookExit: 15, // 0.5s exit animation
+  bookTotal: 180, // 6s total
 
   // Stats reveal
   statsCountUp: 45, // 1.5s

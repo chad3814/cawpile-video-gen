@@ -8,7 +8,7 @@ import {
   interpolate,
 } from 'remotion'
 import { COLORS, FONTS, TIMING, getRatingColor, convertToStars } from '../../lib/theme'
-import { fadeIn, fadeOut, slideInFromLeft, countUp, typewriter } from '../../lib/animations'
+import { fadeIn, countUp, typewriter } from '../../lib/animations'
 import type { RecapBook } from '../../lib/types'
 
 interface BookRevealProps {
@@ -16,14 +16,39 @@ interface BookRevealProps {
   index: number
 }
 
+// Exit directions: [x, y, rotation] - slides off to corners/sides
+const EXIT_DIRECTIONS = [
+  { x: -1200, y: -400, rotate: -15 },  // top-left
+  { x: 1200, y: -400, rotate: 15 },    // top-right
+  { x: -1200, y: 400, rotate: 15 },    // bottom-left
+  { x: 1200, y: 400, rotate: -15 },    // bottom-right
+  { x: -1200, y: 0, rotate: -10 },     // left
+  { x: 1200, y: 0, rotate: 10 },       // right
+] as const
+
 export const BookReveal: React.FC<BookRevealProps> = ({ book, index }) => {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
 
-  // Overall fade
+  // Pick exit direction based on index (consistent per book)
+  const exitDirection = EXIT_DIRECTIONS[index % EXIT_DIRECTIONS.length]
+
+  // Exit animation starts near the end
+  const exitStartFrame = TIMING.bookTotal - TIMING.bookExit
+  const exitProgress = spring({
+    frame: frame - exitStartFrame,
+    fps,
+    config: { damping: 15, stiffness: 80, mass: 1 },
+  })
+
+  const exitX = interpolate(exitProgress, [0, 1], [0, exitDirection.x])
+  const exitY = interpolate(exitProgress, [0, 1], [0, exitDirection.y])
+  const exitRotate = interpolate(exitProgress, [0, 1], [0, exitDirection.rotate])
+  const exitScale = interpolate(exitProgress, [0, 1], [1, 0.8])
+
+  // Overall fade (just for enter, exit is handled by slide)
   const fadeInOpacity = fadeIn(frame, 0, 10)
-  const fadeOutOpacity = fadeOut(frame, TIMING.bookTotal - TIMING.bookFadeOut, TIMING.bookFadeOut)
-  const opacity = Math.min(fadeInOpacity, fadeOutOpacity)
+  const opacity = fadeInOpacity
 
   // Cover slide in
   const coverSlide = spring({
@@ -74,12 +99,13 @@ export const BookReveal: React.FC<BookRevealProps> = ({ book, index }) => {
         }}
       />
 
-      {/* Content container */}
+      {/* Content container with exit animation */}
       <AbsoluteFill
         style={{
           display: 'flex',
           flexDirection: 'column',
           padding: 60,
+          transform: `translate(${exitX}px, ${exitY}px) rotate(${exitRotate}deg) scale(${exitScale})`,
         }}
       >
         {/* Book number indicator */}
