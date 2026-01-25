@@ -63,6 +63,33 @@ export interface MonthlyRecapExport {
   stats: RecapStats
 }
 
+/**
+ * Render request body with userId for S3 path organization
+ */
+export interface RenderRequest {
+  userId: string
+  data: MonthlyRecapExport
+}
+
+/**
+ * Successful render response with S3 URL
+ */
+export interface RenderResponse {
+  success: true
+  filename: string
+  s3Url: string
+  duration: number
+  renderTime: string
+}
+
+/**
+ * Error response for render failures
+ */
+export interface RenderErrorResponse {
+  error: string
+  message: string
+}
+
 export const MONTH_NAMES = [
   'January',
   'February',

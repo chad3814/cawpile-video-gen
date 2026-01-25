@@ -4,9 +4,12 @@ import { bundle } from '@remotion/bundler'
 import { renderMedia, selectComposition } from '@remotion/renderer'
 import path from 'path'
 import fs from 'fs'
-import type { MonthlyRecapExport } from '../src/lib/types'
+import type { MonthlyRecapExport, RenderRequest } from '../src/lib/types'
 import { calculateDuration } from '../src/compositions/MonthlyRecap'
 import { VIDEO_CONFIG } from '../src/lib/theme'
+import { validateAwsEnv } from './lib/validateEnv'
+import { generateS3Key, uploadToS3 } from './lib/s3'
+import { deleteLocalFile } from './lib/cleanup'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -31,12 +34,21 @@ app.post('/render', async (req, res) => {
   const startTime = Date.now()
 
   try {
-    const data: MonthlyRecapExport = req.body
+    const requestBody: RenderRequest = req.body
+
+    // Validate userId
+    if (!requestBody.userId || typeof requestBody.userId !== 'string' || requestBody.userId.trim() === '') {
+      return res.status(400).json({
+        error: 'Invalid request body. userId is required and must be a non-empty string.',
+      })
+    }
+
+    const { userId, data } = requestBody
 
     // Validate input
     if (!data || !data.meta || !data.books || !data.stats) {
       return res.status(400).json({
-        error: 'Invalid request body. Expected MonthlyRecapExport format.',
+        error: 'Invalid request body. Expected MonthlyRecapExport format in data field.',
       })
     }
 
@@ -88,16 +100,46 @@ app.post('/render', async (req, res) => {
       },
     })
 
-    const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1)
-    console.log(`[Render] Complete! Rendered in ${elapsedTime}s: ${outputPath}`)
+    const renderElapsedTime = ((Date.now() - startTime) / 1000).toFixed(1)
+    console.log(`[Render] Complete! Rendered in ${renderElapsedTime}s: ${outputPath}`)
 
-    // Return success with file info
+    // Upload to S3 immediately after render completes
+    const s3Key = generateS3Key({
+      userId,
+      year: data.meta.year,
+      month: data.meta.month,
+      timestamp: new Date(),
+    })
+
+    let s3Url: string
+    try {
+      const uploadResult = await uploadToS3({
+        filePath: outputPath,
+        key: s3Key,
+      })
+      s3Url = uploadResult.url
+
+      // Delete local file only after successful S3 upload
+      await deleteLocalFile(outputPath)
+      console.log(`[Render] Local file deleted: ${filename}`)
+    } catch (s3Error) {
+      // S3 upload failed - do NOT delete local file
+      console.error('[S3] Upload failed, preserving local file:', s3Error)
+      return res.status(500).json({
+        error: 'S3 upload failed',
+        message: s3Error instanceof Error ? s3Error.message : 'Unknown S3 error',
+      })
+    }
+
+    const totalElapsedTime = ((Date.now() - startTime) / 1000).toFixed(1)
+
+    // Return success with S3 URL
     res.json({
       success: true,
       filename,
-      path: outputPath,
+      s3Url,
       duration: durationInFrames / VIDEO_CONFIG.fps,
-      renderTime: elapsedTime,
+      renderTime: totalElapsedTime,
     })
   } catch (error) {
     console.error('[Render] Error:', error)
@@ -134,6 +176,15 @@ app.get('/videos', (req, res) => {
   })
   res.json({ videos })
 })
+
+// Validate environment variables and start server
+try {
+  validateAwsEnv()
+  console.log('[Server] AWS environment variables validated successfully')
+} catch (error) {
+  console.error('[Server] Environment validation failed:', error instanceof Error ? error.message : error)
+  process.exit(1)
+}
 
 // Start server
 app.listen(PORT, () => {
