@@ -253,9 +253,10 @@ export const BookReveal: React.FC<BookRevealProps> = ({ book, index }) => {
                           display: 'inline-block',
                           transform: `translateY(${translateY}px) scale(${scale})`,
                           opacity,
+                          color: isFilled ? '#FFD700' : COLORS.textMuted,
                         }}
                       >
-                        {isFilled ? '⭐' : '☆'}
+                        {isFilled ? '\u2605' : '\u2606'}
                       </span>
                     )
                   })}
