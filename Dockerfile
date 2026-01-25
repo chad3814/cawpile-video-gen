@@ -4,7 +4,7 @@
 
 FROM node:22-bookworm-slim
 
-# Install Chrome Headless Shell dependencies
+# Install Chrome Headless Shell dependencies and fonts
 # These are required for Remotion to render videos using Chromium
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libnss3 \
@@ -22,7 +22,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 \
     libcups2 \
     curl \
+    unzip \
+    fontconfig \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Noto Emoji font (monochrome) from Google Fonts GitHub repo
+RUN mkdir -p /usr/share/fonts/truetype/noto-emoji \
+    && curl -L -o /usr/share/fonts/truetype/noto-emoji/NotoEmoji-VariableFont_wght.ttf \
+       "https://github.com/google/fonts/raw/main/ofl/notoemoji/NotoEmoji%5Bwght%5D.ttf" \
+    && fc-cache -fv
 
 # Set working directory
 WORKDIR /app
