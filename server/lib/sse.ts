@@ -36,9 +36,23 @@ export function setupSSEHeaders(res: Response): void {
   res.setHeader('Content-Type', 'text/event-stream')
   res.setHeader('Cache-Control', 'no-cache')
   res.setHeader('Connection', 'keep-alive')
+  // Prevent proxy buffering (nginx, load balancers)
+  res.setHeader('X-Accel-Buffering', 'no')
+
+  // Disable Nagle's algorithm for immediate TCP packet transmission
+  res.socket?.setNoDelay(true)
 
   // Disable response buffering for streaming
   res.flushHeaders()
+}
+
+/**
+ * Flush the response to ensure immediate delivery
+ * Forces TCP write and prevents buffering
+ */
+function flushResponse(res: Response): void {
+  // Force flush by writing empty string to socket
+  res.socket?.write('')
 }
 
 /**
@@ -47,6 +61,7 @@ export function setupSSEHeaders(res: Response): void {
 function sendEvent(res: Response, eventName: string, data: object): void {
   res.write(`event: ${eventName}\n`)
   res.write(`data: ${JSON.stringify(data)}\n\n`)
+  flushResponse(res)
 }
 
 /**
@@ -91,6 +106,7 @@ export function sendErrorEvent(res: Response, message: string): void {
  */
 export function sendKeepalive(res: Response): void {
   res.write(': keepalive\n\n')
+  flushResponse(res)
 }
 
 /**

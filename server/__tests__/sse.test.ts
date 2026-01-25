@@ -11,15 +11,31 @@ import {
 import type { Response } from 'express'
 
 /**
+ * Create a mock socket object for testing
+ */
+function createMockSocket() {
+  return {
+    setNoDelay: vi.fn(),
+    write: vi.fn(() => true),
+  }
+}
+
+/**
  * Create a mock Express response object for testing
  */
-function createMockResponse(): Response & { writtenData: string[]; headers: Map<string, string> } {
+function createMockResponse(options: { includeSocket?: boolean } = {}): Response & {
+  writtenData: string[]
+  headers: Map<string, string>
+  socket: ReturnType<typeof createMockSocket> | null
+} {
   const writtenData: string[] = []
   const headers = new Map<string, string>()
+  const socket = options.includeSocket ? createMockSocket() : null
 
   const mockRes = {
     writtenData,
     headers,
+    socket,
     setHeader: vi.fn((name: string, value: string) => {
       headers.set(name, value)
       return mockRes
@@ -29,7 +45,11 @@ function createMockResponse(): Response & { writtenData: string[]; headers: Map<
       writtenData.push(data)
       return true
     }),
-  } as unknown as Response & { writtenData: string[]; headers: Map<string, string> }
+  } as unknown as Response & {
+    writtenData: string[]
+    headers: Map<string, string>
+    socket: ReturnType<typeof createMockSocket> | null
+  }
 
   return mockRes
 }
@@ -44,6 +64,30 @@ describe('SSE Utilities', () => {
       expect(mockRes.headers.get('Content-Type')).toBe('text/event-stream')
       expect(mockRes.headers.get('Cache-Control')).toBe('no-cache')
       expect(mockRes.headers.get('Connection')).toBe('keep-alive')
+      expect(mockRes.flushHeaders).toHaveBeenCalled()
+    })
+
+    it('should set X-Accel-Buffering header to no', () => {
+      const mockRes = createMockResponse()
+
+      setupSSEHeaders(mockRes)
+
+      expect(mockRes.headers.get('X-Accel-Buffering')).toBe('no')
+    })
+
+    it('should call setNoDelay on socket when socket exists', () => {
+      const mockRes = createMockResponse({ includeSocket: true })
+
+      setupSSEHeaders(mockRes)
+
+      expect(mockRes.socket?.setNoDelay).toHaveBeenCalledWith(true)
+    })
+
+    it('should handle gracefully when socket is undefined', () => {
+      const mockRes = createMockResponse({ includeSocket: false })
+
+      // Should not throw when socket is null
+      expect(() => setupSSEHeaders(mockRes)).not.toThrow()
       expect(mockRes.flushHeaders).toHaveBeenCalled()
     })
   })
@@ -66,6 +110,14 @@ describe('SSE Utilities', () => {
       const output = mockRes.writtenData.join('')
       expect(output).toBe('event: progress\ndata: {"progress":75,"phase":"rendering"}\n\n')
     })
+
+    it('should flush after sending progress event', () => {
+      const mockRes = createMockResponse({ includeSocket: true })
+
+      sendProgressEvent(mockRes, 50, 'bundling')
+
+      expect(mockRes.socket?.write).toHaveBeenCalledWith('')
+    })
   })
 
   describe('sendCompleteEvent', () => {
@@ -79,6 +131,14 @@ describe('SSE Utilities', () => {
         'event: complete\ndata: {"filename":"recap-2026-01.mp4","s3Url":"https://bucket.s3.us-east-1.amazonaws.com/video.mp4"}\n\n'
       )
     })
+
+    it('should flush after sending complete event', () => {
+      const mockRes = createMockResponse({ includeSocket: true })
+
+      sendCompleteEvent(mockRes, 'test.mp4', 'https://example.com/test.mp4')
+
+      expect(mockRes.socket?.write).toHaveBeenCalledWith('')
+    })
   })
 
   describe('sendErrorEvent', () => {
@@ -90,6 +150,14 @@ describe('SSE Utilities', () => {
       const output = mockRes.writtenData.join('')
       expect(output).toBe('event: error\ndata: {"message":"Render failed: out of memory"}\n\n')
     })
+
+    it('should flush after sending error event', () => {
+      const mockRes = createMockResponse({ includeSocket: true })
+
+      sendErrorEvent(mockRes, 'Test error')
+
+      expect(mockRes.socket?.write).toHaveBeenCalledWith('')
+    })
   })
 
   describe('sendKeepalive', () => {
@@ -100,6 +168,52 @@ describe('SSE Utilities', () => {
 
       const output = mockRes.writtenData.join('')
       expect(output).toBe(': keepalive\n\n')
+    })
+
+    it('should flush after sending keepalive', () => {
+      const mockRes = createMockResponse({ includeSocket: true })
+
+      sendKeepalive(mockRes)
+
+      expect(mockRes.socket?.write).toHaveBeenCalledWith('')
+    })
+
+    it('should handle gracefully when socket is undefined', () => {
+      const mockRes = createMockResponse({ includeSocket: false })
+
+      // Should not throw when socket is null
+      expect(() => sendKeepalive(mockRes)).not.toThrow()
+      expect(mockRes.writtenData.join('')).toBe(': keepalive\n\n')
+    })
+  })
+
+  describe('flush behavior', () => {
+    it('should preserve event data format after flush', () => {
+      const mockRes = createMockResponse({ includeSocket: true })
+
+      sendProgressEvent(mockRes, 42, 'rendering')
+
+      // Verify data format is correct (flush happens after write)
+      const output = mockRes.writtenData.join('')
+      expect(output).toBe('event: progress\ndata: {"progress":42,"phase":"rendering"}\n\n')
+      // Verify flush was called
+      expect(mockRes.socket?.write).toHaveBeenCalledWith('')
+    })
+
+    it('should flush with mock socket for all event types', () => {
+      const mockRes = createMockResponse({ includeSocket: true })
+
+      sendProgressEvent(mockRes, 10, 'bundling')
+      expect(mockRes.socket?.write).toHaveBeenCalledTimes(1)
+
+      sendCompleteEvent(mockRes, 'video.mp4', 'https://s3.example.com/video.mp4')
+      expect(mockRes.socket?.write).toHaveBeenCalledTimes(2)
+
+      sendErrorEvent(mockRes, 'Error occurred')
+      expect(mockRes.socket?.write).toHaveBeenCalledTimes(3)
+
+      sendKeepalive(mockRes)
+      expect(mockRes.socket?.write).toHaveBeenCalledTimes(4)
     })
   })
 
