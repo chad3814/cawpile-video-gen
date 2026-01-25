@@ -30,8 +30,8 @@ export const BookReveal: React.FC<BookRevealProps> = ({ book, index }) => {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
 
-  // Pick exit direction based on index (consistent per book)
-  const exitDirection = EXIT_DIRECTIONS[index % EXIT_DIRECTIONS.length]
+  // Pick exit direction randomly
+  const exitDirection = EXIT_DIRECTIONS[Math.floor(Math.random() * EXIT_DIRECTIONS.length)]
 
   // Exit animation starts near the end
   const exitStartFrame = TIMING.bookTotal - TIMING.bookExit
@@ -253,8 +253,8 @@ export const BookReveal: React.FC<BookRevealProps> = ({ book, index }) => {
                           display: 'inline-block',
                           transform: `translateY(${translateY}px) scale(${scale})`,
                           opacity,
-                          fontFamily: '"Noto Emoji", sans-serif',
-                          color: isFilled ? '#FFD700' : COLORS.textMuted,
+                          fontFamily: '"Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif',
+                          filter: isFilled ? 'none' : 'grayscale(100%) opacity(0.4)',
                         }}
                       >
                         ⭐

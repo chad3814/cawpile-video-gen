@@ -27,10 +27,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Noto Emoji font (monochrome) from Google Fonts GitHub repo
-RUN mkdir -p /usr/share/fonts/truetype/noto-emoji \
-    && curl -L -o /usr/share/fonts/truetype/noto-emoji/NotoEmoji-VariableFont_wght.ttf \
-       "https://github.com/google/fonts/raw/main/ofl/notoemoji/NotoEmoji%5Bwght%5D.ttf" \
+# Install Noto Color Emoji font for star rating display
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    fonts-noto-color-emoji \
+    && rm -rf /var/lib/apt/lists/* \
     && fc-cache -fv
 
 # Set working directory
