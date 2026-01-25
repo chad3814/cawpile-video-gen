@@ -4,12 +4,22 @@ import { bundle } from '@remotion/bundler'
 import { renderMedia, selectComposition } from '@remotion/renderer'
 import path from 'path'
 import fs from 'fs'
-import type { MonthlyRecapExport, RenderRequest } from '../src/lib/types'
+import type { RenderRequest } from '../src/lib/types'
 import { calculateDuration } from '../src/compositions/MonthlyRecap'
 import { VIDEO_CONFIG } from '../src/lib/theme'
 import { validateAwsEnv } from './lib/validateEnv'
 import { generateS3Key, uploadToS3 } from './lib/s3'
 import { deleteLocalFile } from './lib/cleanup'
+import { parseRenderStreamQuery } from './lib/validation'
+import {
+  setupSSEHeaders,
+  sendProgressEvent,
+  sendCompleteEvent,
+  sendErrorEvent,
+  sendKeepalive,
+  mapBundleProgress,
+  mapRenderProgress,
+} from './lib/sse'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -27,6 +37,125 @@ if (!fs.existsSync(OUTPUT_DIR)) {
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
+
+// Render stream endpoint with SSE progress
+app.get('/render-stream', async (req, res) => {
+  // Validate query parameter before initiating SSE
+  const queryData = req.query.data as string | undefined
+  const validationResult = parseRenderStreamQuery(queryData)
+
+  if (!validationResult.valid) {
+    return res.status(400).json({ error: validationResult.error })
+  }
+
+  const { userId, data } = validationResult.data
+
+  // Set up SSE headers
+  setupSSEHeaders(res)
+
+  // Progress tracking for duplicate prevention
+  let lastEmittedProgress = -1
+
+  // Keepalive mechanism
+  const keepaliveInterval = setInterval(() => {
+    sendKeepalive(res)
+  }, 15000)
+
+  // Helper to emit progress only on change
+  const emitProgress = (progress: number, phase: 'bundling' | 'rendering') => {
+    if (progress !== lastEmittedProgress) {
+      sendProgressEvent(res, progress, phase)
+      lastEmittedProgress = progress
+    }
+  }
+
+  try {
+    console.log(
+      `[Render-Stream] Starting render for ${data.meta.monthName} ${data.meta.year} (${data.books.length} books)`
+    )
+
+    // Calculate duration based on content
+    const durationInFrames = calculateDuration(data)
+    console.log(
+      `[Render-Stream] Duration: ${durationInFrames} frames (${(durationInFrames / VIDEO_CONFIG.fps).toFixed(1)}s)`
+    )
+
+    // Bundle the project with progress streaming
+    console.log('[Render-Stream] Bundling...')
+    const bundleLocation = await bundle({
+      entryPoint: path.join(process.cwd(), 'src/index.ts'),
+      onProgress: (progress) => {
+        const mappedProgress = mapBundleProgress(progress)
+        emitProgress(mappedProgress, 'bundling')
+      },
+    })
+
+    // Select composition
+    const composition = await selectComposition({
+      serveUrl: bundleLocation,
+      id: 'MonthlyRecap',
+      inputProps: { data },
+    })
+
+    // Override duration with calculated value
+    composition.durationInFrames = durationInFrames
+
+    // Generate output filename
+    const filename = `recap-${data.meta.year}-${String(data.meta.month).padStart(2, '0')}-${Date.now()}.mp4`
+    const outputPath = path.join(OUTPUT_DIR, filename)
+
+    // Render the video with progress streaming
+    console.log('[Render-Stream] Rendering video...')
+    await renderMedia({
+      composition,
+      serveUrl: bundleLocation,
+      codec: 'h264',
+      outputLocation: outputPath,
+      inputProps: { data },
+      onProgress: ({ progress }) => {
+        const mappedProgress = mapRenderProgress(progress)
+        emitProgress(mappedProgress, 'rendering')
+      },
+    })
+
+    console.log(`[Render-Stream] Render complete: ${outputPath}`)
+
+    // Upload to S3 immediately after render completes
+    const s3Key = generateS3Key({
+      userId,
+      year: data.meta.year,
+      month: data.meta.month,
+      timestamp: new Date(),
+    })
+
+    try {
+      const uploadResult = await uploadToS3({
+        filePath: outputPath,
+        key: s3Key,
+      })
+
+      // Delete local file only after successful S3 upload
+      await deleteLocalFile(outputPath)
+      console.log(`[Render-Stream] Local file deleted: ${filename}`)
+
+      // Clear keepalive and send complete event
+      clearInterval(keepaliveInterval)
+      sendCompleteEvent(res, filename, uploadResult.url)
+      res.end()
+    } catch (s3Error) {
+      // S3 upload failed - do NOT delete local file
+      console.error('[Render-Stream] S3 upload failed, preserving local file:', s3Error)
+      clearInterval(keepaliveInterval)
+      sendErrorEvent(res, `S3 upload failed: ${s3Error instanceof Error ? s3Error.message : 'Unknown S3 error'}`)
+      res.end()
+    }
+  } catch (error) {
+    console.error('[Render-Stream] Error:', error)
+    clearInterval(keepaliveInterval)
+    sendErrorEvent(res, `Render failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    res.end()
+  }
 })
 
 // Render endpoint
@@ -186,6 +315,9 @@ try {
   process.exit(1)
 }
 
+// Export app for testing
+export { app }
+
 // Start server
 app.listen(PORT, () => {
   console.log(`
@@ -195,10 +327,11 @@ app.listen(PORT, () => {
 ║  Listening on http://localhost:${PORT}                   ║
 ║                                                       ║
 ║  Endpoints:                                           ║
-║    POST /render     - Render video from recap data    ║
+║    POST /render        - Render video from recap data ║
+║    GET  /render-stream - Stream render progress (SSE) ║
 ║    GET  /download/:filename - Download rendered video ║
-║    GET  /videos     - List rendered videos            ║
-║    GET  /health     - Health check                    ║
+║    GET  /videos        - List rendered videos         ║
+║    GET  /health        - Health check                 ║
 ╚═══════════════════════════════════════════════════════╝
   `)
 })
