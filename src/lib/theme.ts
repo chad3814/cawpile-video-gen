@@ -57,9 +57,9 @@ export const TIMING = {
   bookSlideIn: 12, // 0.4s
   bookTitleType: 20, // ~0.67s
   bookRatingCount: 30, // 1s
-  bookHold: 90, // 3s hold after fully revealed
+  bookHold: 60, // 2s hold after fully revealed
   bookExit: 15, // 0.5s exit animation
-  bookTotal: 180, // 6s total
+  bookTotal: 150, // 5s total
 
   // Stats reveal
   statsCountUp: 45, // 1.5s
@@ -75,9 +75,9 @@ export const TIMING = {
 
   // Outro
   outroFadeIn: 15, // 0.5s
-  outroHold: 30, // 1s
+  outroHold: 60, // 2s
   outroFadeOut: 15, // 0.5s
-  outroTotal: 60, // 2s
+  outroTotal: 90, // 3s
 
   // Transitions
   transitionOverlap: 6, // 0.2s overlap between sequences
