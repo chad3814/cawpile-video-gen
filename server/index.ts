@@ -41,9 +41,10 @@ app.get('/health', (req, res) => {
 
 // Render stream endpoint with SSE progress
 app.get('/render-stream', async (req, res) => {
-  // Validate query parameter before initiating SSE
+  // Validate query parameters before initiating SSE
   const queryData = req.query.data as string | undefined
-  const validationResult = parseRenderStreamQuery(queryData)
+  const queryUserId = req.query.userId as string | undefined
+  const validationResult = parseRenderStreamQuery(queryData, queryUserId)
 
   if (!validationResult.valid) {
     return res.status(400).json({ error: validationResult.error })

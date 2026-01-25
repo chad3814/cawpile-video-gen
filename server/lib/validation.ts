@@ -1,4 +1,4 @@
-import type { RenderRequest } from '../../src/lib/types'
+import type { RenderRequest, MonthlyRecapExport } from '../../src/lib/types'
 
 /**
  * Result of validating a render stream query parameter
@@ -8,12 +8,29 @@ export type ValidationResult =
   | { valid: false; error: string }
 
 /**
- * Parse and validate the render-stream query parameter
+ * Parse and validate the render-stream query parameters
  *
  * @param queryData - The URL-encoded JSON string from the `data` query parameter
+ * @param queryUserId - The userId from the `userId` query parameter
  * @returns ValidationResult indicating success with parsed data or failure with error message
  */
-export function parseRenderStreamQuery(queryData: string | undefined): ValidationResult {
+export function parseRenderStreamQuery(
+  queryData: string | undefined,
+  queryUserId: string | undefined
+): ValidationResult {
+  // Validate userId
+  if (!queryUserId) {
+    return { valid: false, error: 'Invalid request: userId is required' }
+  }
+
+  if (typeof queryUserId !== 'string') {
+    return { valid: false, error: 'Invalid request: userId must be a string' }
+  }
+
+  if (queryUserId.trim() === '') {
+    return { valid: false, error: 'Invalid request: userId cannot be empty' }
+  }
+
   // Check for missing data parameter
   if (queryData === undefined || queryData === '') {
     return { valid: false, error: 'Missing required query parameter: data' }
@@ -33,31 +50,7 @@ export function parseRenderStreamQuery(queryData: string | undefined): Validatio
     return { valid: false, error: 'Invalid request: expected object' }
   }
 
-  const request = parsed as Record<string, unknown>
-
-  // Validate userId
-  if (!request.userId) {
-    return { valid: false, error: 'Invalid request: userId is required' }
-  }
-
-  if (typeof request.userId !== 'string') {
-    return { valid: false, error: 'Invalid request: userId must be a string' }
-  }
-
-  if (request.userId.trim() === '') {
-    return { valid: false, error: 'Invalid request: userId cannot be empty' }
-  }
-
-  // Validate data field exists
-  if (!request.data) {
-    return { valid: false, error: 'Invalid request: data field is required' }
-  }
-
-  if (typeof request.data !== 'object' || request.data === null) {
-    return { valid: false, error: 'Invalid request: data must be an object' }
-  }
-
-  const data = request.data as Record<string, unknown>
+  const data = parsed as Record<string, unknown>
 
   // Validate data contains required fields
   if (!data.meta) {
@@ -72,6 +65,12 @@ export function parseRenderStreamQuery(queryData: string | undefined): Validatio
     return { valid: false, error: 'Invalid request: data.stats is required' }
   }
 
-  // All validations passed
-  return { valid: true, data: request as unknown as RenderRequest }
+  // All validations passed - construct the RenderRequest
+  return {
+    valid: true,
+    data: {
+      userId: queryUserId,
+      data: parsed as MonthlyRecapExport,
+    },
+  }
 }

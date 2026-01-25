@@ -53,14 +53,12 @@ function createValidMonthlyRecapExport(): MonthlyRecapExport {
 
 describe('Validation Utilities', () => {
   describe('parseRenderStreamQuery', () => {
-    it('should parse valid URL-encoded JSON successfully', () => {
-      const validRequest = {
-        userId: 'user-123',
-        data: createValidMonthlyRecapExport(),
-      }
-      const encoded = encodeURIComponent(JSON.stringify(validRequest))
+    it('should parse valid URL-encoded JSON with separate userId', () => {
+      const validData = createValidMonthlyRecapExport()
+      const encodedData = encodeURIComponent(JSON.stringify(validData))
+      const userId = 'user-123'
 
-      const result = parseRenderStreamQuery(encoded)
+      const result = parseRenderStreamQuery(encodedData, userId)
 
       expect(result.valid).toBe(true)
       if (result.valid) {
@@ -69,8 +67,32 @@ describe('Validation Utilities', () => {
       }
     })
 
+    it('should return error for missing userId query parameter', () => {
+      const validData = createValidMonthlyRecapExport()
+      const encodedData = encodeURIComponent(JSON.stringify(validData))
+
+      const result = parseRenderStreamQuery(encodedData, undefined)
+
+      expect(result.valid).toBe(false)
+      if (!result.valid) {
+        expect(result.error).toContain('userId is required')
+      }
+    })
+
+    it('should return error for empty userId query parameter', () => {
+      const validData = createValidMonthlyRecapExport()
+      const encodedData = encodeURIComponent(JSON.stringify(validData))
+
+      const result = parseRenderStreamQuery(encodedData, '   ')
+
+      expect(result.valid).toBe(false)
+      if (!result.valid) {
+        expect(result.error).toContain('userId cannot be empty')
+      }
+    })
+
     it('should return error for missing data query parameter', () => {
-      const result = parseRenderStreamQuery(undefined)
+      const result = parseRenderStreamQuery(undefined, 'user-123')
 
       expect(result.valid).toBe(false)
       if (!result.valid) {
@@ -79,7 +101,7 @@ describe('Validation Utilities', () => {
     })
 
     it('should return error for empty data query parameter', () => {
-      const result = parseRenderStreamQuery('')
+      const result = parseRenderStreamQuery('', 'user-123')
 
       expect(result.valid).toBe(false)
       if (!result.valid) {
@@ -90,7 +112,7 @@ describe('Validation Utilities', () => {
     it('should return error for malformed JSON', () => {
       const malformedJson = encodeURIComponent('{invalid json}')
 
-      const result = parseRenderStreamQuery(malformedJson)
+      const result = parseRenderStreamQuery(malformedJson, 'user-123')
 
       expect(result.valid).toBe(false)
       if (!result.valid) {
@@ -98,46 +120,14 @@ describe('Validation Utilities', () => {
       }
     })
 
-    it('should return error for missing userId', () => {
-      const requestWithoutUserId = {
-        data: createValidMonthlyRecapExport(),
-      }
-      const encoded = encodeURIComponent(JSON.stringify(requestWithoutUserId))
-
-      const result = parseRenderStreamQuery(encoded)
-
-      expect(result.valid).toBe(false)
-      if (!result.valid) {
-        expect(result.error).toContain('userId is required')
-      }
-    })
-
-    it('should return error for empty userId', () => {
-      const requestWithEmptyUserId = {
-        userId: '   ',
-        data: createValidMonthlyRecapExport(),
-      }
-      const encoded = encodeURIComponent(JSON.stringify(requestWithEmptyUserId))
-
-      const result = parseRenderStreamQuery(encoded)
-
-      expect(result.valid).toBe(false)
-      if (!result.valid) {
-        expect(result.error).toContain('userId cannot be empty')
-      }
-    })
-
     it('should return error for missing data.meta', () => {
-      const requestWithoutMeta = {
-        userId: 'user-123',
-        data: {
-          books: [],
-          stats: { totalBooks: 0 },
-        },
+      const dataWithoutMeta = {
+        books: [],
+        stats: { totalBooks: 0 },
       }
-      const encoded = encodeURIComponent(JSON.stringify(requestWithoutMeta))
+      const encoded = encodeURIComponent(JSON.stringify(dataWithoutMeta))
 
-      const result = parseRenderStreamQuery(encoded)
+      const result = parseRenderStreamQuery(encoded, 'user-123')
 
       expect(result.valid).toBe(false)
       if (!result.valid) {
@@ -146,16 +136,13 @@ describe('Validation Utilities', () => {
     })
 
     it('should return error for missing data.books', () => {
-      const requestWithoutBooks = {
-        userId: 'user-123',
-        data: {
-          meta: { month: 1, year: 2026 },
-          stats: { totalBooks: 0 },
-        },
+      const dataWithoutBooks = {
+        meta: { month: 1, year: 2026 },
+        stats: { totalBooks: 0 },
       }
-      const encoded = encodeURIComponent(JSON.stringify(requestWithoutBooks))
+      const encoded = encodeURIComponent(JSON.stringify(dataWithoutBooks))
 
-      const result = parseRenderStreamQuery(encoded)
+      const result = parseRenderStreamQuery(encoded, 'user-123')
 
       expect(result.valid).toBe(false)
       if (!result.valid) {
@@ -164,16 +151,13 @@ describe('Validation Utilities', () => {
     })
 
     it('should return error for missing data.stats', () => {
-      const requestWithoutStats = {
-        userId: 'user-123',
-        data: {
-          meta: { month: 1, year: 2026 },
-          books: [],
-        },
+      const dataWithoutStats = {
+        meta: { month: 1, year: 2026 },
+        books: [],
       }
-      const encoded = encodeURIComponent(JSON.stringify(requestWithoutStats))
+      const encoded = encodeURIComponent(JSON.stringify(dataWithoutStats))
 
-      const result = parseRenderStreamQuery(encoded)
+      const result = parseRenderStreamQuery(encoded, 'user-123')
 
       expect(result.valid).toBe(false)
       if (!result.valid) {

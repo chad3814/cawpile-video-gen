@@ -22,7 +22,8 @@ function createTestApp() {
 
   app.get('/render-stream', async (req, res) => {
     const queryData = req.query.data as string | undefined
-    const validationResult = parseRenderStreamQuery(queryData)
+    const queryUserId = req.query.userId as string | undefined
+    const validationResult = parseRenderStreamQuery(queryData, queryUserId)
 
     if (!validationResult.valid) {
       return res.status(400).json({ error: validationResult.error })
@@ -45,7 +46,8 @@ function createTestApp() {
   // Error simulation endpoint
   app.get('/render-stream-error', async (req, res) => {
     const queryData = req.query.data as string | undefined
-    const validationResult = parseRenderStreamQuery(queryData)
+    const queryUserId = req.query.userId as string | undefined
+    const validationResult = parseRenderStreamQuery(queryData, queryUserId)
 
     if (!validationResult.valid) {
       return res.status(400).json({ error: validationResult.error })
@@ -60,7 +62,8 @@ function createTestApp() {
   // S3 upload failure simulation endpoint
   app.get('/render-stream-s3-error', async (req, res) => {
     const queryData = req.query.data as string | undefined
-    const validationResult = parseRenderStreamQuery(queryData)
+    const queryUserId = req.query.userId as string | undefined
+    const validationResult = parseRenderStreamQuery(queryData, queryUserId)
 
     if (!validationResult.valid) {
       return res.status(400).json({ error: validationResult.error })
@@ -77,7 +80,8 @@ function createTestApp() {
   // Progress deduplication test endpoint
   app.get('/render-stream-dedup', async (req, res) => {
     const queryData = req.query.data as string | undefined
-    const validationResult = parseRenderStreamQuery(queryData)
+    const queryUserId = req.query.userId as string | undefined
+    const validationResult = parseRenderStreamQuery(queryData, queryUserId)
 
     if (!validationResult.valid) {
       return res.status(400).json({ error: validationResult.error })
@@ -162,15 +166,12 @@ describe('/render-stream Endpoint', () => {
 
   describe('SSE Headers', () => {
     it('should set correct SSE headers for valid request', async () => {
-      const validRequest = {
-        userId: 'user-123',
-        data: createValidMonthlyRecapExport(),
-      }
-      const encoded = encodeURIComponent(JSON.stringify(validRequest))
+      const validData = createValidMonthlyRecapExport()
+      const encodedData = encodeURIComponent(JSON.stringify(validData))
 
       const response = await request(app)
         .get('/render-stream')
-        .query({ data: encoded })
+        .query({ data: encodedData, userId: 'user-123' })
 
       expect(response.headers['content-type']).toContain('text/event-stream')
       expect(response.headers['cache-control']).toBe('no-cache')
@@ -182,7 +183,7 @@ describe('/render-stream Endpoint', () => {
     it('should return HTTP 400 for malformed request (not SSE)', async () => {
       const response = await request(app)
         .get('/render-stream')
-        .query({ data: encodeURIComponent('{invalid}') })
+        .query({ data: encodeURIComponent('{invalid}'), userId: 'user-123' })
 
       expect(response.status).toBe(400)
       expect(response.headers['content-type']).toContain('application/json')
@@ -190,21 +191,21 @@ describe('/render-stream Endpoint', () => {
     })
 
     it('should return HTTP 400 for missing data parameter', async () => {
-      const response = await request(app).get('/render-stream')
+      const response = await request(app)
+        .get('/render-stream')
+        .query({ userId: 'user-123' })
 
       expect(response.status).toBe(400)
       expect(response.body.error).toContain('Missing required query parameter')
     })
 
     it('should return HTTP 400 for missing userId', async () => {
-      const invalidRequest = {
-        data: createValidMonthlyRecapExport(),
-      }
-      const encoded = encodeURIComponent(JSON.stringify(invalidRequest))
+      const validData = createValidMonthlyRecapExport()
+      const encodedData = encodeURIComponent(JSON.stringify(validData))
 
       const response = await request(app)
         .get('/render-stream')
-        .query({ data: encoded })
+        .query({ data: encodedData })
 
       expect(response.status).toBe(400)
       expect(response.body.error).toContain('userId is required')
@@ -213,15 +214,12 @@ describe('/render-stream Endpoint', () => {
 
   describe('SSE Events', () => {
     it('should emit progress events with correct format', async () => {
-      const validRequest = {
-        userId: 'user-123',
-        data: createValidMonthlyRecapExport(),
-      }
-      const encoded = encodeURIComponent(JSON.stringify(validRequest))
+      const validData = createValidMonthlyRecapExport()
+      const encodedData = encodeURIComponent(JSON.stringify(validData))
 
       const response = await request(app)
         .get('/render-stream')
-        .query({ data: encoded })
+        .query({ data: encodedData, userId: 'user-123' })
 
       // Check that the response contains progress events
       expect(response.text).toContain('event: progress')
@@ -231,15 +229,12 @@ describe('/render-stream Endpoint', () => {
     })
 
     it('should emit complete event with filename and s3Url', async () => {
-      const validRequest = {
-        userId: 'user-123',
-        data: createValidMonthlyRecapExport(),
-      }
-      const encoded = encodeURIComponent(JSON.stringify(validRequest))
+      const validData = createValidMonthlyRecapExport()
+      const encodedData = encodeURIComponent(JSON.stringify(validData))
 
       const response = await request(app)
         .get('/render-stream')
-        .query({ data: encoded })
+        .query({ data: encodedData, userId: 'user-123' })
 
       expect(response.text).toContain('event: complete')
       expect(response.text).toContain('"filename":"test-video.mp4"')
@@ -247,15 +242,12 @@ describe('/render-stream Endpoint', () => {
     })
 
     it('should emit error event on render failure', async () => {
-      const validRequest = {
-        userId: 'user-123',
-        data: createValidMonthlyRecapExport(),
-      }
-      const encoded = encodeURIComponent(JSON.stringify(validRequest))
+      const validData = createValidMonthlyRecapExport()
+      const encodedData = encodeURIComponent(JSON.stringify(validData))
 
       const response = await request(app)
         .get('/render-stream-error')
-        .query({ data: encoded })
+        .query({ data: encodedData, userId: 'user-123' })
 
       expect(response.text).toContain('event: error')
       expect(response.text).toContain('"message":"Render failed: simulated error"')
@@ -264,30 +256,24 @@ describe('/render-stream Endpoint', () => {
 
   describe('Strategic Gap Tests', () => {
     it('should emit error event on S3 upload failure', async () => {
-      const validRequest = {
-        userId: 'user-123',
-        data: createValidMonthlyRecapExport(),
-      }
-      const encoded = encodeURIComponent(JSON.stringify(validRequest))
+      const validData = createValidMonthlyRecapExport()
+      const encodedData = encodeURIComponent(JSON.stringify(validData))
 
       const response = await request(app)
         .get('/render-stream-s3-error')
-        .query({ data: encoded })
+        .query({ data: encodedData, userId: 'user-123' })
 
       expect(response.text).toContain('event: error')
       expect(response.text).toContain('S3 upload failed')
     })
 
     it('should deduplicate progress events with same percentage', async () => {
-      const validRequest = {
-        userId: 'user-123',
-        data: createValidMonthlyRecapExport(),
-      }
-      const encoded = encodeURIComponent(JSON.stringify(validRequest))
+      const validData = createValidMonthlyRecapExport()
+      const encodedData = encodeURIComponent(JSON.stringify(validData))
 
       const response = await request(app)
         .get('/render-stream-dedup')
-        .query({ data: encoded })
+        .query({ data: encodedData, userId: 'user-123' })
 
       // Count occurrences of progress 0 - should appear exactly once
       const progressZeroMatches = response.text.match(/"progress":0/g)
@@ -299,15 +285,12 @@ describe('/render-stream Endpoint', () => {
     })
 
     it('should transition from bundling to rendering phase at 25%', async () => {
-      const validRequest = {
-        userId: 'user-123',
-        data: createValidMonthlyRecapExport(),
-      }
-      const encoded = encodeURIComponent(JSON.stringify(validRequest))
+      const validData = createValidMonthlyRecapExport()
+      const encodedData = encodeURIComponent(JSON.stringify(validData))
 
       const response = await request(app)
         .get('/render-stream')
-        .query({ data: encoded })
+        .query({ data: encodedData, userId: 'user-123' })
 
       // Verify bundling phase ends at 25 and rendering starts after
       expect(response.text).toContain('"progress":25,"phase":"bundling"')
