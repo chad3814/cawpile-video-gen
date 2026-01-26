@@ -76,7 +76,7 @@ export const MonthlyRecap: React.FC<MonthlyRecapProps> = ({ data }) => {
           from={bookStarts[index]}
           durationInFrames={TIMING.bookTotal}
         >
-          <BookReveal book={book} index={index} />
+          <BookReveal book={book} index={index} random={Math.random()} />
         </Sequence>
       ))}
 

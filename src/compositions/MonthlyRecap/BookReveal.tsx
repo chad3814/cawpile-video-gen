@@ -14,6 +14,7 @@ import type { RecapBook } from '../../lib/types'
 interface BookRevealProps {
   book: RecapBook
   index: number
+  random: number
 }
 
 // Exit directions: [x, y, rotation] - slides off to corners/sides
@@ -26,12 +27,12 @@ const EXIT_DIRECTIONS = [
   { x: 1200, y: 0, rotate: 10 },       // right
 ] as const
 
-export const BookReveal: React.FC<BookRevealProps> = ({ book, index }) => {
+export const BookReveal: React.FC<BookRevealProps> = ({ book, index, random }) => {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
 
   // Pick exit direction randomly
-  const exitDirection = EXIT_DIRECTIONS[Math.floor(Math.random() * EXIT_DIRECTIONS.length)]
+  const exitDirection = EXIT_DIRECTIONS[Math.floor(random * EXIT_DIRECTIONS.length)]
 
   // Exit animation starts near the end
   const exitStartFrame = TIMING.bookTotal - TIMING.bookExit
