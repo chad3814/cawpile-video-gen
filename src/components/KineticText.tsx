@@ -1,7 +1,7 @@
 import React from 'react'
 import { useCurrentFrame, interpolate, spring, useVideoConfig } from 'remotion'
 import { COLORS, FONTS } from '../lib/theme'
-import { EASING, staggerDelay } from '../lib/animations'
+import { staggerDelay } from '../lib/animations'
 
 interface KineticTextProps {
   text: string

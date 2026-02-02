@@ -4,11 +4,10 @@ import {
   useCurrentFrame,
   useVideoConfig,
   spring,
-  interpolate,
   Img,
 } from 'remotion'
 import { COLORS, FONTS, TIMING, getRatingColor } from '../../lib/theme'
-import { fadeIn, fadeOut, countUp, staggerDelay } from '../../lib/animations'
+import { fadeIn, fadeOut, countUp } from '../../lib/animations'
 import { KineticText } from '../../components/KineticText'
 import type { RecapStats } from '../../lib/types'
 

@@ -64,11 +64,93 @@ export interface MonthlyRecapExport {
 }
 
 /**
+ * Video template definition for customizable video styling
+ */
+export interface VideoTemplate {
+  id: string
+  name: string
+  description: string
+  version: string
+
+  // Visual theme
+  colors: {
+    background: string
+    backgroundSecondary: string
+    backgroundTertiary: string
+    textPrimary: string
+    textSecondary: string
+    textMuted: string
+    accent: string
+    accentSecondary: string
+    accentMuted: string
+    completed: string
+    dnf: string
+    ratingHigh: string
+    ratingMedium: string
+    ratingLow: string
+    overlay: string
+    grain: string
+  }
+
+  // Typography
+  fonts: {
+    heading: string
+    body: string
+    mono: string
+  }
+
+  // Timing configuration (in frames at 30fps)
+  timing: {
+    introFadeIn: number
+    introHold: number
+    introFadeOut: number
+    introTotal: number
+    bookSlideIn: number
+    bookTitleType: number
+    bookRatingCount: number
+    bookHold: number
+    bookExit: number
+    bookTotal: number
+    statsCountUp: number
+    statsHold: number
+    statsFadeOut: number
+    statsTotal: number
+    comingSoonFadeIn: number
+    comingSoonHold: number
+    comingSoonFadeOut: number
+    comingSoonTotal: number
+    outroFadeIn: number
+    outroHold: number
+    outroFadeOut: number
+    outroTotal: number
+    transitionOverlap: number
+  }
+
+  // Layout and animation preferences
+  layout: {
+    introStyle: 'slam' | 'fadeUp' | 'scaleIn' | 'typewriter'
+    bookRevealAnimation: 'slide' | 'fade' | 'scale'
+    statsAnimation: 'countUp' | 'fadeIn' | 'pop'
+    outroAnimation: 'fade' | 'scale' | 'slide'
+  }
+
+  // Sequence configuration
+  sequences: {
+    intro: boolean
+    bookReveal: boolean
+    stats: boolean
+    comingSoon: boolean
+    outro: boolean
+  }
+}
+
+/**
  * Render request body with userId for S3 path organization
  */
 export interface RenderRequest {
   userId: string
   data: MonthlyRecapExport
+  template?: VideoTemplate | string // Full template or template ID
 }
 
 /**
