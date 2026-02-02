@@ -1,6 +1,11 @@
 import React from 'react'
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate } from 'remotion'
-import { COLORS, FONTS, TIMING } from '../../lib/theme'
+import { AbsoluteFill, useCurrentFrame, interpolate } from 'remotion'
+// Theme constants replaced by template hooks
+import {
+  useTemplateColors,
+  useTemplateTiming,
+  useTemplateLayout,
+} from '../../lib/templates'
 import { KineticText } from '../../components/KineticText'
 import { fadeIn, fadeOut } from '../../lib/animations'
 
@@ -16,29 +21,35 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({
   bookCount,
 }) => {
   const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const colors = useTemplateColors()
+  const timing = useTemplateTiming()
+  const layout = useTemplateLayout()
 
   // Fade in at start, fade out at end
-  const fadeInOpacity = fadeIn(frame, 0, TIMING.introFadeIn)
-  const fadeOutOpacity = fadeOut(frame, TIMING.introTotal - TIMING.introFadeOut, TIMING.introFadeOut)
+  const fadeInOpacity = fadeIn(frame, 0, timing.introFadeIn)
+  const fadeOutOpacity = fadeOut(
+    frame,
+    timing.introTotal - timing.introFadeOut,
+    timing.introFadeOut,
+  )
   const opacity = Math.min(fadeInOpacity, fadeOutOpacity)
 
   // Subtle background animation
-  const bgScale = interpolate(frame, [0, TIMING.introTotal], [1.05, 1], {
+  const bgScale = interpolate(frame, [0, timing.introTotal], [1.05, 1], {
     extrapolateRight: 'clamp',
   })
 
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: COLORS.background,
+        backgroundColor: colors.background,
         opacity,
       }}
     >
       {/* Animated gradient background */}
       <AbsoluteFill
         style={{
-          background: `radial-gradient(ellipse at 50% 30%, ${COLORS.backgroundTertiary} 0%, ${COLORS.background} 70%)`,
+          background: `radial-gradient(ellipse at 50% 30%, ${colors.backgroundTertiary} 0%, ${colors.background} 70%)`,
           transform: `scale(${bgScale})`,
         }}
       />
@@ -69,19 +80,19 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({
             startFrame={5}
             style="fadeUp"
             fontSize={32}
-            color={COLORS.accent}
+            color={colors.accent}
             fontWeight={600}
             letterSpacing={8}
           />
         </div>
 
-        {/* Month name - big slam animation */}
+        {/* Month name - use template's intro style */}
         <KineticText
           text={monthName.toUpperCase()}
           startFrame={15}
-          style="slam"
+          style={layout.introStyle}
           fontSize={120}
-          color={COLORS.textPrimary}
+          color={colors.textPrimary}
           fontWeight={900}
           letterSpacing={-4}
         />
@@ -93,7 +104,7 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({
             startFrame={25}
             style="fadeUp"
             fontSize={64}
-            color={COLORS.textSecondary}
+            color={colors.textSecondary}
             fontWeight={300}
             letterSpacing={12}
           />
@@ -106,7 +117,7 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({
             startFrame={40}
             style="scaleIn"
             fontSize={36}
-            color={COLORS.textMuted}
+            color={colors.textMuted}
             fontWeight={500}
             letterSpacing={4}
           />

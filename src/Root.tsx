@@ -113,8 +113,7 @@ export const RemotionRoot: React.FC = () => {
     <>
       <Composition
         id="MonthlyRecap"
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        component={MonthlyRecap as React.FC<any>}
+        component={MonthlyRecap}
         durationInFrames={duration}
         fps={VIDEO_CONFIG.fps}
         width={VIDEO_CONFIG.width}

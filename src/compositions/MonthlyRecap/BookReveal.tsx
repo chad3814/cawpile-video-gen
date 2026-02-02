@@ -7,7 +7,12 @@ import {
   spring,
   interpolate,
 } from 'remotion'
-import { COLORS, FONTS, TIMING, getRatingColor, convertToStars } from '../../lib/theme'
+import { getRatingColor, convertToStars } from '../../lib/theme'
+import {
+  useTemplateColors,
+  useTemplateFonts,
+  useTemplateTiming,
+} from '../../lib/templates'
 import { fadeIn, countUp, typewriter } from '../../lib/animations'
 import type { RecapBook } from '../../lib/types'
 
@@ -27,15 +32,23 @@ const EXIT_DIRECTIONS = [
   { x: 1200, y: 0, rotate: 10 },       // right
 ] as const
 
-export const BookReveal: React.FC<BookRevealProps> = ({ book, index, random }) => {
+export const BookReveal: React.FC<BookRevealProps> = ({
+  book,
+  index,
+  random,
+}) => {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
+  const colors = useTemplateColors()
+  const fonts = useTemplateFonts()
+  const timing = useTemplateTiming()
 
   // Pick exit direction randomly
-  const exitDirection = EXIT_DIRECTIONS[Math.floor(random * EXIT_DIRECTIONS.length)]
+  const exitDirection =
+    EXIT_DIRECTIONS[Math.floor(random * EXIT_DIRECTIONS.length)]
 
   // Exit animation starts near the end
-  const exitStartFrame = TIMING.bookTotal - TIMING.bookExit
+  const exitStartFrame = timing.bookTotal - timing.bookExit
   const exitProgress = spring({
     frame: frame - exitStartFrame,
     fps,
@@ -89,14 +102,14 @@ export const BookReveal: React.FC<BookRevealProps> = ({ book, index, random }) =
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: COLORS.background,
+        backgroundColor: colors.background,
         opacity,
       }}
     >
       {/* Background gradient */}
       <AbsoluteFill
         style={{
-          background: `linear-gradient(135deg, ${COLORS.backgroundSecondary} 0%, ${COLORS.background} 100%)`,
+          background: `linear-gradient(135deg, ${colors.backgroundSecondary} 0%, ${colors.background} 100%)`,
         }}
       />
 
@@ -115,9 +128,9 @@ export const BookReveal: React.FC<BookRevealProps> = ({ book, index, random }) =
             position: 'absolute',
             top: 60,
             right: 60,
-            fontFamily: FONTS.mono,
+            fontFamily: fonts.mono,
             fontSize: 24,
-            color: COLORS.textMuted,
+            color: colors.textMuted,
             opacity: fadeIn(frame, 0, 15),
           }}
         >
@@ -158,14 +171,14 @@ export const BookReveal: React.FC<BookRevealProps> = ({ book, index, random }) =
                 style={{
                   width: 280,
                   height: 420,
-                  backgroundColor: COLORS.backgroundTertiary,
+                  backgroundColor: colors.backgroundTertiary,
                   borderRadius: 12,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontFamily: FONTS.heading,
+                  fontFamily: fonts.heading,
                   fontSize: 24,
-                  color: COLORS.textMuted,
+                  color: colors.textMuted,
                   textAlign: 'center',
                   padding: 20,
                 }}
@@ -188,10 +201,10 @@ export const BookReveal: React.FC<BookRevealProps> = ({ book, index, random }) =
             {/* Title */}
             <h1
               style={{
-                fontFamily: FONTS.heading,
+                fontFamily: fonts.heading,
                 fontSize: 48,
                 fontWeight: 700,
-                color: COLORS.textPrimary,
+                color: colors.textPrimary,
                 textAlign: 'center',
                 margin: 0,
                 lineHeight: 1.2,
@@ -206,9 +219,9 @@ export const BookReveal: React.FC<BookRevealProps> = ({ book, index, random }) =
             {/* Author */}
             <p
               style={{
-                fontFamily: FONTS.body,
+                fontFamily: fonts.body,
                 fontSize: 28,
-                color: COLORS.textSecondary,
+                color: colors.textSecondary,
                 margin: 0,
                 opacity: authorOpacity,
               }}
@@ -267,7 +280,7 @@ export const BookReveal: React.FC<BookRevealProps> = ({ book, index, random }) =
                 {/* Numeric rating */}
                 <div
                   style={{
-                    fontFamily: FONTS.mono,
+                    fontFamily: fonts.mono,
                     fontSize: 48,
                     fontWeight: 700,
                     color: getRatingColor(ratingValue),
@@ -289,11 +302,13 @@ export const BookReveal: React.FC<BookRevealProps> = ({ book, index, random }) =
                 style={{
                   padding: '12px 32px',
                   borderRadius: 50,
-                  backgroundColor: isCompleted ? COLORS.completed : COLORS.dnf,
-                  fontFamily: FONTS.heading,
+                  backgroundColor: isCompleted
+                    ? colors.completed
+                    : colors.dnf,
+                  fontFamily: fonts.heading,
                   fontSize: 20,
                   fontWeight: 600,
-                  color: COLORS.textPrimary,
+                  color: colors.textPrimary,
                   textTransform: 'uppercase',
                   letterSpacing: 2,
                 }}

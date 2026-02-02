@@ -1,6 +1,6 @@
 import React from 'react'
-import { AbsoluteFill, Sequence, useVideoConfig } from 'remotion'
-import { COLORS, TIMING, VIDEO_CONFIG } from '../../lib/theme'
+import { AbsoluteFill, Sequence } from 'remotion'
+import { TIMING } from '../../lib/theme'
 import type { MonthlyRecapExport, VideoTemplate } from '../../lib/types'
 import {
   TemplateProvider,

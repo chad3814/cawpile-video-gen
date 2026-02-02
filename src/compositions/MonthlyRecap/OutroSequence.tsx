@@ -4,7 +4,6 @@ import {
   useCurrentFrame,
   useVideoConfig,
   spring,
-  interpolate,
 } from 'remotion'
 import { COLORS, FONTS, TIMING } from '../../lib/theme'
 import { fadeIn, fadeOut, pulse } from '../../lib/animations'
