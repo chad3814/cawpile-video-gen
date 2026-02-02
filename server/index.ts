@@ -5,12 +5,14 @@ import { renderMedia, selectComposition } from '@remotion/renderer'
 import path from 'path'
 import fs from 'fs'
 import type { RenderRequest } from '../src/lib/types'
+import type { VideoTemplate } from '../src/lib/template-types'
 import { calculateDuration } from '../src/compositions/MonthlyRecap'
 import { VIDEO_CONFIG } from '../src/lib/theme'
 import { validateAwsEnv } from './lib/validateEnv'
 import { generateS3Key, uploadToS3 } from './lib/s3'
 import { deleteLocalFile } from './lib/cleanup'
 import { parseRenderStreamQuery } from './lib/validation'
+import { validateTemplate } from './lib/template-validation'
 import {
   setupSSEHeaders,
   sendProgressEvent,
@@ -44,13 +46,14 @@ app.get('/render-stream', async (req, res) => {
   // Validate query parameters before initiating SSE
   const queryData = req.query.data as string | undefined
   const queryUserId = req.query.userId as string | undefined
-  const validationResult = parseRenderStreamQuery(queryData, queryUserId)
+  const queryTemplate = req.query.template as string | undefined
+  const validationResult = parseRenderStreamQuery(queryData, queryUserId, queryTemplate)
 
   if (!validationResult.valid) {
     return res.status(400).json({ error: validationResult.error })
   }
 
-  const { userId, data } = validationResult.data
+  const { userId, data, template } = validationResult.data
 
   // Set up SSE headers
   setupSSEHeaders(res)
@@ -75,9 +78,12 @@ app.get('/render-stream', async (req, res) => {
     console.log(
       `[Render-Stream] Starting render for ${data.meta.monthName} ${data.meta.year} (${data.books.length} books)`
     )
+    if (template) {
+      console.log('[Render-Stream] Using custom template')
+    }
 
-    // Calculate duration based on content
-    const durationInFrames = calculateDuration(data)
+    // Calculate duration based on content and template
+    const durationInFrames = calculateDuration(data, template)
     console.log(
       `[Render-Stream] Duration: ${durationInFrames} frames (${(durationInFrames / VIDEO_CONFIG.fps).toFixed(1)}s)`
     )
@@ -92,11 +98,14 @@ app.get('/render-stream', async (req, res) => {
       },
     })
 
+    // Input props with template
+    const inputProps = template ? { data, template } : { data }
+
     // Select composition
     const composition = await selectComposition({
       serveUrl: bundleLocation,
       id: 'MonthlyRecap',
-      inputProps: { data },
+      inputProps,
     })
 
     // Override duration with calculated value
@@ -113,7 +122,7 @@ app.get('/render-stream', async (req, res) => {
       serveUrl: bundleLocation,
       codec: 'h264',
       outputLocation: outputPath,
-      inputProps: { data },
+      inputProps,
       onProgress: ({ progress }) => {
         const mappedProgress = mapRenderProgress(progress)
         emitProgress(mappedProgress, 'rendering')
@@ -173,7 +182,7 @@ app.post('/render', async (req, res) => {
       })
     }
 
-    const { userId, data } = requestBody
+    const { userId, data, template: rawTemplate } = requestBody
 
     // Validate input
     if (!data || !data.meta || !data.books || !data.stats) {
@@ -182,12 +191,26 @@ app.post('/render', async (req, res) => {
       })
     }
 
+    // Validate and sanitize template if provided
+    let template: Partial<VideoTemplate> | undefined
+    if (rawTemplate) {
+      const templateValidation = validateTemplate(rawTemplate)
+      if (templateValidation.warnings.length > 0) {
+        console.log(`[Render] Template validation warnings: ${templateValidation.warnings.join(', ')}`)
+      }
+      // Use the raw template (not sanitized) since the composition will handle merging
+      template = rawTemplate
+    }
+
     console.log(
       `[Render] Starting render for ${data.meta.monthName} ${data.meta.year} (${data.books.length} books)`
     )
+    if (template) {
+      console.log('[Render] Using custom template')
+    }
 
-    // Calculate duration based on content
-    const durationInFrames = calculateDuration(data)
+    // Calculate duration based on content and template
+    const durationInFrames = calculateDuration(data, template)
     console.log(`[Render] Duration: ${durationInFrames} frames (${(durationInFrames / VIDEO_CONFIG.fps).toFixed(1)}s)`)
 
     // Bundle the project
@@ -201,11 +224,14 @@ app.post('/render', async (req, res) => {
       },
     })
 
+    // Input props with template
+    const inputProps = template ? { data, template } : { data }
+
     // Select composition
     const composition = await selectComposition({
       serveUrl: bundleLocation,
       id: 'MonthlyRecap',
-      inputProps: { data },
+      inputProps,
     })
 
     // Override duration with calculated value
@@ -222,7 +248,7 @@ app.post('/render', async (req, res) => {
       serveUrl: bundleLocation,
       codec: 'h264',
       outputLocation: outputPath,
-      inputProps: { data },
+      inputProps,
       onProgress: ({ progress }) => {
         if (Math.round(progress * 100) % 10 === 0) {
           console.log(`[Render] Render progress: ${Math.round(progress * 100)}%`)

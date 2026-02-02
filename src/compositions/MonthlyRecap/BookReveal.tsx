@@ -7,13 +7,9 @@ import {
   spring,
   interpolate,
 } from 'remotion'
-import { getRatingColor, convertToStars } from '../../lib/theme'
-import {
-  useTemplateColors,
-  useTemplateFonts,
-  useTemplateTiming,
-} from '../../lib/templates'
+import { useColors, useFonts, useTiming, useSequenceConfig, useRatingColor } from '../../lib/TemplateContext'
 import { fadeIn, countUp, typewriter } from '../../lib/animations'
+import { convertToStars } from '../../lib/theme'
 import type { RecapBook } from '../../lib/types'
 
 interface BookRevealProps {
@@ -32,16 +28,21 @@ const EXIT_DIRECTIONS = [
   { x: 1200, y: 0, rotate: 10 },       // right
 ] as const
 
-export const BookReveal: React.FC<BookRevealProps> = ({
-  book,
-  index,
-  random,
-}) => {
+// Cover size dimensions
+const COVER_SIZES = {
+  small: { width: 180, height: 270 },
+  medium: { width: 230, height: 345 },
+  large: { width: 280, height: 420 },
+} as const
+
+export const BookReveal: React.FC<BookRevealProps> = ({ book, index, random }) => {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
-  const colors = useTemplateColors()
-  const fonts = useTemplateFonts()
-  const timing = useTemplateTiming()
+  const colors = useColors()
+  const fonts = useFonts()
+  const timing = useTiming()
+  const config = useSequenceConfig('bookReveal')
+  const getRatingColor = useRatingColor()
 
   // Pick exit direction randomly
   const exitDirection =
@@ -98,6 +99,9 @@ export const BookReveal: React.FC<BookRevealProps> = ({
 
   const stars = book.rating ? convertToStars(book.rating.average) : 0
   const isCompleted = book.status === 'COMPLETED'
+
+  // Get cover dimensions based on config
+  const coverDimensions = COVER_SIZES[config.coverSize]
 
   return (
     <AbsoluteFill
@@ -159,8 +163,8 @@ export const BookReveal: React.FC<BookRevealProps> = ({
               <Img
                 src={book.coverUrl}
                 style={{
-                  width: 280,
-                  height: 420,
+                  width: coverDimensions.width,
+                  height: coverDimensions.height,
                   objectFit: 'cover',
                   borderRadius: 12,
                   boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
@@ -169,8 +173,8 @@ export const BookReveal: React.FC<BookRevealProps> = ({
             ) : (
               <div
                 style={{
-                  width: 280,
-                  height: 420,
+                  width: coverDimensions.width,
+                  height: coverDimensions.height,
                   backgroundColor: colors.backgroundTertiary,
                   borderRadius: 12,
                   display: 'flex',
@@ -217,20 +221,22 @@ export const BookReveal: React.FC<BookRevealProps> = ({
             </h1>
 
             {/* Author */}
-            <p
-              style={{
-                fontFamily: fonts.body,
-                fontSize: 28,
-                color: colors.textSecondary,
-                margin: 0,
-                opacity: authorOpacity,
-              }}
-            >
-              {book.authors.join(', ')}
-            </p>
+            {config.showAuthors && (
+              <p
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 28,
+                  color: colors.textSecondary,
+                  margin: 0,
+                  opacity: authorOpacity,
+                }}
+              >
+                {book.authors.join(', ')}
+              </p>
+            )}
 
             {/* Rating */}
-            {book.rating && (
+            {config.showRatings && book.rating && (
               <div
                 style={{
                   display: 'flex',
@@ -257,7 +263,7 @@ export const BookReveal: React.FC<BookRevealProps> = ({
                     })
 
                     const translateY = interpolate(starProgress, [0, 1], [-80, 0])
-                    const opacity = interpolate(starProgress, [0, 0.3, 1], [0, 1, 1])
+                    const starOpacity = interpolate(starProgress, [0, 0.3, 1], [0, 1, 1])
                     const scale = interpolate(starProgress, [0, 0.8, 1], [0.5, 1.2, 1])
 
                     return (
@@ -266,7 +272,7 @@ export const BookReveal: React.FC<BookRevealProps> = ({
                         style={{
                           display: 'inline-block',
                           transform: `translateY(${translateY}px) scale(${scale})`,
-                          opacity,
+                          opacity: starOpacity,
                           fontFamily: '"Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif',
                           filter: isFilled ? 'none' : 'grayscale(100%) opacity(0.4)',
                         }}
@@ -302,9 +308,7 @@ export const BookReveal: React.FC<BookRevealProps> = ({
                 style={{
                   padding: '12px 32px',
                   borderRadius: 50,
-                  backgroundColor: isCompleted
-                    ? colors.completed
-                    : colors.dnf,
+                  backgroundColor: isCompleted ? colors.completed : colors.dnf,
                   fontFamily: fonts.heading,
                   fontSize: 20,
                   fontWeight: 600,

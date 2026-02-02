@@ -7,7 +7,7 @@ import {
   interpolate,
   Img,
 } from 'remotion'
-import { COLORS, FONTS, TIMING } from '../../lib/theme'
+import { useColors, useFonts, useTiming, useSequenceConfig } from '../../lib/TemplateContext'
 import { fadeIn, fadeOut, staggerDelay } from '../../lib/animations'
 import { KineticText } from '../../components/KineticText'
 import type { RecapCurrentlyReading } from '../../lib/types'
@@ -24,6 +24,9 @@ interface BookCardProps {
 const BookCard: React.FC<BookCardProps> = ({ book, index }) => {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
+  const colors = useColors()
+  const fonts = useFonts()
+  const config = useSequenceConfig('comingSoon')
 
   const delay = staggerDelay(index, 8)
   const startFrame = 20 + delay
@@ -65,7 +68,7 @@ const BookCard: React.FC<BookCardProps> = ({ book, index }) => {
           style={{
             width: 160,
             height: 240,
-            backgroundColor: COLORS.backgroundTertiary,
+            backgroundColor: colors.backgroundTertiary,
             borderRadius: 10,
             display: 'flex',
             alignItems: 'center',
@@ -75,9 +78,9 @@ const BookCard: React.FC<BookCardProps> = ({ book, index }) => {
         >
           <span
             style={{
-              fontFamily: FONTS.body,
+              fontFamily: fonts.body,
               fontSize: 14,
-              color: COLORS.textMuted,
+              color: colors.textMuted,
               textAlign: 'center',
             }}
           >
@@ -89,10 +92,10 @@ const BookCard: React.FC<BookCardProps> = ({ book, index }) => {
       {/* Title */}
       <div
         style={{
-          fontFamily: FONTS.heading,
+          fontFamily: fonts.heading,
           fontSize: 18,
           fontWeight: 600,
-          color: COLORS.textPrimary,
+          color: colors.textPrimary,
           textAlign: 'center',
           maxWidth: 180,
           lineHeight: 1.3,
@@ -102,35 +105,39 @@ const BookCard: React.FC<BookCardProps> = ({ book, index }) => {
       </div>
 
       {/* Progress bar */}
-      <div
-        style={{
-          width: 140,
-          height: 8,
-          backgroundColor: COLORS.backgroundTertiary,
-          borderRadius: 4,
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            width: `${book.progress}%`,
-            height: '100%',
-            backgroundColor: COLORS.accent,
-            borderRadius: 4,
-          }}
-        />
-      </div>
+      {config.showProgress && (
+        <>
+          <div
+            style={{
+              width: 140,
+              height: 8,
+              backgroundColor: colors.backgroundTertiary,
+              borderRadius: 4,
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                width: `${book.progress}%`,
+                height: '100%',
+                backgroundColor: colors.accent,
+                borderRadius: 4,
+              }}
+            />
+          </div>
 
-      {/* Progress text */}
-      <div
-        style={{
-          fontFamily: FONTS.mono,
-          fontSize: 14,
-          color: COLORS.textMuted,
-        }}
-      >
-        {Math.round(book.progress)}%
-      </div>
+          {/* Progress text */}
+          <div
+            style={{
+              fontFamily: fonts.mono,
+              fontSize: 14,
+              color: colors.textMuted,
+            }}
+          >
+            {Math.round(book.progress)}%
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -139,30 +146,34 @@ export const ComingSoonSequence: React.FC<ComingSoonSequenceProps> = ({
   books,
 }) => {
   const frame = useCurrentFrame()
+  const colors = useColors()
+  const fonts = useFonts()
+  const timing = useTiming()
+  const config = useSequenceConfig('comingSoon')
 
   // Overall fade
-  const fadeInOpacity = fadeIn(frame, 0, TIMING.comingSoonFadeIn)
+  const fadeInOpacity = fadeIn(frame, 0, timing.comingSoonFadeIn)
   const fadeOutOpacity = fadeOut(
     frame,
-    TIMING.comingSoonTotal - TIMING.comingSoonFadeOut,
-    TIMING.comingSoonFadeOut
+    timing.comingSoonTotal - timing.comingSoonFadeOut,
+    timing.comingSoonFadeOut
   )
   const opacity = Math.min(fadeInOpacity, fadeOutOpacity)
 
-  // Only show up to 4 books
-  const displayBooks = books.slice(0, 4)
+  // Limit books based on config
+  const displayBooks = books.slice(0, config.maxBooks)
 
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: COLORS.background,
+        backgroundColor: colors.background,
         opacity,
       }}
     >
       {/* Background gradient */}
       <AbsoluteFill
         style={{
-          background: `linear-gradient(180deg, ${COLORS.background} 0%, ${COLORS.backgroundSecondary} 100%)`,
+          background: `linear-gradient(180deg, ${colors.background} 0%, ${colors.backgroundSecondary} 100%)`,
         }}
       />
 
@@ -182,7 +193,7 @@ export const ComingSoonSequence: React.FC<ComingSoonSequenceProps> = ({
           startFrame={5}
           style="slam"
           fontSize={64}
-          color={COLORS.accent}
+          color={colors.accent}
           fontWeight={800}
           letterSpacing={4}
         />
@@ -191,9 +202,9 @@ export const ComingSoonSequence: React.FC<ComingSoonSequenceProps> = ({
         <div
           style={{
             opacity: fadeIn(frame, 15, 10),
-            fontFamily: FONTS.body,
+            fontFamily: fonts.body,
             fontSize: 28,
-            color: COLORS.textSecondary,
+            color: colors.textSecondary,
           }}
         >
           Currently Reading

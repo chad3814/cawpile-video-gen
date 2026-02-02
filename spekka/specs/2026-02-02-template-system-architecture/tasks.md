@@ -85,28 +85,28 @@ This feature implements a template abstraction layer that allows video styles an
 #### Task Group 3: TemplateContext and useTemplate Hook
 **Dependencies:** Task Group 1
 
-- [ ] 3.0 Complete React context for template distribution
-  - [ ] 3.1 Write 4-6 focused tests for TemplateContext
+- [x] 3.0 Complete React context for template distribution
+  - [x] 3.1 Write 4-6 focused tests for TemplateContext
     - Test `useTemplate()` returns merged template values
     - Test context with partial template provides defaults for missing values
     - Test `useColors()`, `useFonts()`, `useTiming()` convenience hooks
     - Test error when `useTemplate()` called outside provider
-  - [ ] 3.2 Create `src/lib/TemplateContext.tsx`
+  - [x] 3.2 Create `src/lib/TemplateContext.tsx`
     - Define `TemplateContextValue` interface
     - Create React context with undefined default
     - Export `TemplateProvider` component accepting `template` prop
-  - [ ] 3.3 Implement `useTemplate()` hook
+  - [x] 3.3 Implement `useTemplate()` hook
     - Throws descriptive error if used outside `TemplateProvider`
     - Returns full resolved template object
-  - [ ] 3.4 Add convenience hooks for common access patterns
+  - [x] 3.4 Add convenience hooks for common access patterns
     - `useColors()` returns `template.global.colors`
     - `useFonts()` returns `template.global.fonts`
     - `useTiming()` returns `template.global.timing`
     - `useSequenceConfig(sequenceName)` returns specific sequence config
-  - [ ] 3.5 Update `getRatingColor()` and `convertToStars()` to use context
+  - [x] 3.5 Update `getRatingColor()` and `convertToStars()` to use context
     - Create `useRatingColor()` hook that uses template colors
     - Maintain backward-compatible function versions for non-React code
-  - [ ] 3.6 Ensure context tests pass
+  - [x] 3.6 Ensure context tests pass
     - Run ONLY the 4-6 tests written in 3.1
     - Verify hooks work correctly with provider
 
@@ -123,36 +123,36 @@ This feature implements a template abstraction layer that allows video styles an
 #### Task Group 4: Migrate Sequence Components to useTemplate
 **Dependencies:** Task Group 3
 
-- [ ] 4.0 Complete component migration to template context
-  - [ ] 4.1 Write 5-8 focused tests for migrated components
+- [x] 4.0 Complete component migration to template context
+  - [x] 4.1 Write 5-8 focused tests for migrated components
     - Test IntroSequence renders with custom template colors
     - Test BookReveal uses template timing values
     - Test StatsReveal applies template fonts
     - Test custom template overrides default styling
     - Test component renders identically with default template vs no template
-  - [ ] 4.2 Wrap MonthlyRecap composition in TemplateProvider
+  - [x] 4.2 Wrap MonthlyRecap composition in TemplateProvider
     - Add `template` to `MonthlyRecapProps` interface
     - Wrap `AbsoluteFill` contents in `TemplateProvider`
     - Call `getEffectiveTemplate()` to merge before passing to provider
-  - [ ] 4.3 Migrate IntroSequence to use template hooks
+  - [x] 4.3 Migrate IntroSequence to use template hooks
     - Replace `COLORS` import with `useColors()` hook
     - Replace `FONTS` import with `useFonts()` hook
     - Replace `TIMING` references with `useTiming()` hook
     - Add `layout` support for `centered`, `split`, `minimal` variants
-  - [ ] 4.4 Migrate BookReveal to use template hooks
+  - [x] 4.4 Migrate BookReveal to use template hooks
     - Replace direct theme imports with template hooks
     - Add `layout` support for `sequential`, `grid`, `carousel` variants
     - Use `useSequenceConfig('bookReveal')` for sequence-specific settings
-  - [ ] 4.5 Migrate StatsReveal to use template hooks
+  - [x] 4.5 Migrate StatsReveal to use template hooks
     - Replace direct theme imports with template hooks
     - Add layout variant support if applicable
-  - [ ] 4.6 Migrate ComingSoonSequence to use template hooks
+  - [x] 4.6 Migrate ComingSoonSequence to use template hooks
     - Replace direct theme imports with template hooks
     - Add layout variant support if applicable
-  - [ ] 4.7 Migrate OutroSequence to use template hooks
+  - [x] 4.7 Migrate OutroSequence to use template hooks
     - Replace direct theme imports with template hooks
     - Add layout variant support if applicable
-  - [ ] 4.8 Ensure component migration tests pass
+  - [x] 4.8 Ensure component migration tests pass
     - Run ONLY the 5-8 tests written in 4.1
     - Verify visual output matches with default template
 
@@ -169,23 +169,23 @@ This feature implements a template abstraction layer that allows video styles an
 #### Task Group 5: Template-Aware Duration Calculation
 **Dependencies:** Task Groups 1, 4
 
-- [ ] 5.0 Complete template-aware duration calculation
-  - [ ] 5.1 Write 3-5 focused tests for duration calculation
+- [x] 5.0 Complete template-aware duration calculation
+  - [x] 5.1 Write 3-5 focused tests for duration calculation
     - Test `calculateDuration()` with default template matches current behavior
     - Test custom timing values affect duration correctly
     - Test grid layout calculates different duration than sequential
-  - [ ] 5.2 Update `calculateDuration()` signature
+  - [x] 5.2 Update `calculateDuration()` signature
     - Add optional `template?: VideoTemplate` parameter
     - Extract timing values from template when provided
     - Fall back to defaults when template not provided (backward compatibility)
-  - [ ] 5.3 Implement layout-specific duration formulas
+  - [x] 5.3 Implement layout-specific duration formulas
     - Sequential layout: current formula (per-book timing)
     - Grid layout: single reveal for all books (shorter duration)
     - Carousel layout: may need adjusted timing per book
-  - [ ] 5.4 Update MonthlyRecap to use template-aware duration
+  - [x] 5.4 Update MonthlyRecap to use template-aware duration
     - Pass template to `calculateDuration()` in composition
     - Ensure frame calculations use template timing values
-  - [ ] 5.5 Ensure duration tests pass
+  - [x] 5.5 Ensure duration tests pass
     - Run ONLY the 3-5 tests written in 5.1
     - Verify duration calculations are correct
 
@@ -202,29 +202,29 @@ This feature implements a template abstraction layer that allows video styles an
 #### Task Group 6: Extend Render Endpoints
 **Dependencies:** Task Groups 2, 4, 5
 
-- [ ] 6.0 Complete API integration for templates
-  - [ ] 6.1 Write 4-6 focused tests for API template handling
+- [x] 6.0 Complete API integration for templates
+  - [x] 6.1 Write 4-6 focused tests for API template handling
     - Test `/render` accepts optional template in body
     - Test `/render-stream` accepts template via query parameter
     - Test invalid template returns validation error
     - Test unknown template properties are stripped (not rejected)
     - Test render without template uses defaults
-  - [ ] 6.2 Extend `RenderRequest` interface
+  - [x] 6.2 Extend `RenderRequest` interface
     - Add optional `template?: VideoTemplate` field to `src/lib/types.ts`
     - Update any TypeScript types that depend on `RenderRequest`
-  - [ ] 6.3 Update `/render` endpoint in `server/index.ts`
+  - [x] 6.3 Update `/render` endpoint in `server/index.ts`
     - Extract `template` from request body
     - Call `validateTemplate()` on provided template
     - Pass validated template to composition via `inputProps`
-  - [ ] 6.4 Update `/render-stream` endpoint
+  - [x] 6.4 Update `/render-stream` endpoint
     - Accept `template` query parameter (URL-encoded JSON)
     - Parse and validate template from query string
     - Pass validated template through SSE render flow
-  - [ ] 6.5 Update `parseRenderStreamQuery()` validation
+  - [x] 6.5 Update `parseRenderStreamQuery()` validation
     - Add optional `queryTemplate` parameter
     - Parse URL-encoded JSON template from query
     - Return validated template in `RenderRequest` result
-  - [ ] 6.6 Ensure API tests pass
+  - [x] 6.6 Ensure API tests pass
     - Run ONLY the 4-6 tests written in 6.1
     - Verify end-to-end render with custom template
 
@@ -241,8 +241,8 @@ This feature implements a template abstraction layer that allows video styles an
 #### Task Group 7: Test Review and Gap Analysis
 **Dependencies:** Task Groups 1-6
 
-- [ ] 7.0 Review existing tests and fill critical gaps only
-  - [ ] 7.1 Review tests from Task Groups 1-6
+- [x] 7.0 Review existing tests and fill critical gaps only
+  - [x] 7.1 Review tests from Task Groups 1-6
     - Review the 4-6 tests written for template types (Task 1.1)
     - Review the 4-6 tests written for validation (Task 2.1)
     - Review the 4-6 tests written for context (Task 3.1)
@@ -250,16 +250,16 @@ This feature implements a template abstraction layer that allows video styles an
     - Review the 3-5 tests written for duration calculation (Task 5.1)
     - Review the 4-6 tests written for API integration (Task 6.1)
     - Total existing tests: approximately 24-37 tests
-  - [ ] 7.2 Analyze test coverage gaps for template system only
+  - [x] 7.2 Analyze test coverage gaps for template system only
     - Identify critical template workflows lacking coverage
     - Focus ONLY on gaps related to this spec's feature requirements
     - Prioritize end-to-end template rendering over unit test gaps
-  - [ ] 7.3 Write up to 10 additional strategic tests maximum
+  - [x] 7.3 Write up to 10 additional strategic tests maximum
     - Add maximum of 10 new tests to fill identified critical gaps
     - Focus on integration points (template through full render pipeline)
     - Test edge cases: empty template, template with only one section
     - Test visual output consistency with default vs explicit default template
-  - [ ] 7.4 Run feature-specific tests only
+  - [x] 7.4 Run feature-specific tests only
     - Run ONLY tests related to template system (tests from 1.1-6.1 and 7.3)
     - Expected total: approximately 34-47 tests maximum
     - Do NOT run the entire application test suite

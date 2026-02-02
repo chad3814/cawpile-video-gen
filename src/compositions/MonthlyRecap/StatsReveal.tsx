@@ -6,7 +6,7 @@ import {
   spring,
   Img,
 } from 'remotion'
-import { COLORS, FONTS, TIMING, getRatingColor } from '../../lib/theme'
+import { useColors, useFonts, useTiming, useRatingColor } from '../../lib/TemplateContext'
 import { fadeIn, fadeOut, countUp } from '../../lib/animations'
 import { KineticText } from '../../components/KineticText'
 import type { RecapStats } from '../../lib/types'
@@ -27,11 +27,15 @@ const StatCard: React.FC<StatCardProps> = ({
   label,
   value,
   startFrame,
-  color = COLORS.textPrimary,
+  color,
   suffix = '',
 }) => {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
+  const colors = useColors()
+  const fonts = useFonts()
+
+  const cardColor = color || colors.textPrimary
 
   const scale = spring({
     frame: frame - startFrame,
@@ -56,10 +60,10 @@ const StatCard: React.FC<StatCardProps> = ({
     >
       <div
         style={{
-          fontFamily: FONTS.mono,
+          fontFamily: fonts.mono,
           fontSize: 72,
           fontWeight: 700,
-          color,
+          color: cardColor,
           lineHeight: 1,
         }}
       >
@@ -68,9 +72,9 @@ const StatCard: React.FC<StatCardProps> = ({
       </div>
       <div
         style={{
-          fontFamily: FONTS.body,
+          fontFamily: fonts.body,
           fontSize: 24,
-          color: COLORS.textMuted,
+          color: colors.textMuted,
           textTransform: 'uppercase',
           letterSpacing: 3,
         }}
@@ -84,13 +88,17 @@ const StatCard: React.FC<StatCardProps> = ({
 export const StatsReveal: React.FC<StatsRevealProps> = ({ stats }) => {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
+  const colors = useColors()
+  const fonts = useFonts()
+  const timing = useTiming()
+  const getRatingColor = useRatingColor()
 
   // Overall fade
   const fadeInOpacity = fadeIn(frame, 0, 15)
   const fadeOutOpacity = fadeOut(
     frame,
-    TIMING.statsTotal - TIMING.statsFadeOut,
-    TIMING.statsFadeOut
+    timing.statsTotal - timing.statsFadeOut,
+    timing.statsFadeOut
   )
   const opacity = Math.min(fadeInOpacity, fadeOutOpacity)
 
@@ -104,14 +112,14 @@ export const StatsReveal: React.FC<StatsRevealProps> = ({ stats }) => {
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: COLORS.background,
+        backgroundColor: colors.background,
         opacity,
       }}
     >
       {/* Background */}
       <AbsoluteFill
         style={{
-          background: `radial-gradient(circle at 50% 100%, ${COLORS.accent}15 0%, transparent 50%)`,
+          background: `radial-gradient(circle at 50% 100%, ${colors.accent}15 0%, transparent 50%)`,
         }}
       />
 
@@ -130,7 +138,7 @@ export const StatsReveal: React.FC<StatsRevealProps> = ({ stats }) => {
             startFrame={5}
             style="slam"
             fontSize={56}
-            color={COLORS.accent}
+            color={colors.accent}
             fontWeight={800}
             letterSpacing={4}
           />
@@ -158,7 +166,7 @@ export const StatsReveal: React.FC<StatsRevealProps> = ({ stats }) => {
               label="Books Read"
               value={stats.totalBooks}
               startFrame={15}
-              color={COLORS.accent}
+              color={colors.accent}
             />
             <StatCard
               label="Pages Read"
@@ -169,13 +177,13 @@ export const StatsReveal: React.FC<StatsRevealProps> = ({ stats }) => {
               label="Completed"
               value={stats.completedCount}
               startFrame={25}
-              color={COLORS.completed}
+              color={colors.completed}
             />
             <StatCard
               label="DNF"
               value={stats.dnfCount}
               startFrame={30}
-              color={stats.dnfCount > 0 ? COLORS.dnf : COLORS.textMuted}
+              color={stats.dnfCount > 0 ? colors.dnf : colors.textMuted}
             />
           </div>
         </div>
@@ -190,9 +198,9 @@ export const StatsReveal: React.FC<StatsRevealProps> = ({ stats }) => {
           >
             <div
               style={{
-                fontFamily: FONTS.body,
+                fontFamily: fonts.body,
                 fontSize: 24,
-                color: COLORS.textMuted,
+                color: colors.textMuted,
                 marginBottom: 12,
               }}
             >
@@ -200,7 +208,7 @@ export const StatsReveal: React.FC<StatsRevealProps> = ({ stats }) => {
             </div>
             <div
               style={{
-                fontFamily: FONTS.mono,
+                fontFamily: fonts.mono,
                 fontSize: 96,
                 fontWeight: 700,
                 color: getRatingColor(stats.averageRating),
@@ -220,7 +228,7 @@ export const StatsReveal: React.FC<StatsRevealProps> = ({ stats }) => {
               justifyContent: 'center',
               gap: 30,
               padding: 30,
-              backgroundColor: COLORS.backgroundSecondary,
+              backgroundColor: colors.backgroundSecondary,
               borderRadius: 20,
               transform: `scale(${topBookScale})`,
             }}
@@ -239,9 +247,9 @@ export const StatsReveal: React.FC<StatsRevealProps> = ({ stats }) => {
             <div>
               <div
                 style={{
-                  fontFamily: FONTS.body,
+                  fontFamily: fonts.body,
                   fontSize: 18,
-                  color: COLORS.accent,
+                  color: colors.accent,
                   textTransform: 'uppercase',
                   letterSpacing: 2,
                   marginBottom: 8,
@@ -251,10 +259,10 @@ export const StatsReveal: React.FC<StatsRevealProps> = ({ stats }) => {
               </div>
               <div
                 style={{
-                  fontFamily: FONTS.heading,
+                  fontFamily: fonts.heading,
                   fontSize: 28,
                   fontWeight: 600,
-                  color: COLORS.textPrimary,
+                  color: colors.textPrimary,
                   maxWidth: 500,
                 }}
               >
@@ -262,7 +270,7 @@ export const StatsReveal: React.FC<StatsRevealProps> = ({ stats }) => {
               </div>
               <div
                 style={{
-                  fontFamily: FONTS.mono,
+                  fontFamily: fonts.mono,
                   fontSize: 24,
                   color: getRatingColor(stats.topRatedBook.rating),
                   marginTop: 8,

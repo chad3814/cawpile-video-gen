@@ -1,4 +1,6 @@
 import type { RenderRequest, MonthlyRecapExport } from '../../src/lib/types'
+import type { VideoTemplate } from '../../src/lib/template-types'
+import { validateTemplate } from './template-validation'
 
 /**
  * Result of validating a render stream query parameter
@@ -12,11 +14,13 @@ export type ValidationResult =
  *
  * @param queryData - The URL-encoded JSON string from the `data` query parameter
  * @param queryUserId - The userId from the `userId` query parameter
+ * @param queryTemplate - Optional URL-encoded JSON template from the `template` query parameter
  * @returns ValidationResult indicating success with parsed data or failure with error message
  */
 export function parseRenderStreamQuery(
   queryData: string | undefined,
-  queryUserId: string | undefined
+  queryUserId: string | undefined,
+  queryTemplate?: string | undefined
 ): ValidationResult {
   // Validate userId
   if (!queryUserId) {
@@ -36,21 +40,21 @@ export function parseRenderStreamQuery(
     return { valid: false, error: 'Missing required query parameter: data' }
   }
 
-  // URL-decode and parse JSON
-  let parsed: unknown
+  // URL-decode and parse JSON for data
+  let parsedData: unknown
   try {
     const decoded = decodeURIComponent(queryData)
-    parsed = JSON.parse(decoded)
+    parsedData = JSON.parse(decoded)
   } catch {
     return { valid: false, error: 'Invalid JSON in data parameter' }
   }
 
   // Validate top-level structure
-  if (typeof parsed !== 'object' || parsed === null) {
+  if (typeof parsedData !== 'object' || parsedData === null) {
     return { valid: false, error: 'Invalid request: expected object' }
   }
 
-  const data = parsed as Record<string, unknown>
+  const data = parsedData as Record<string, unknown>
 
   // Validate data contains required fields
   if (!data.meta) {
@@ -65,12 +69,39 @@ export function parseRenderStreamQuery(
     return { valid: false, error: 'Invalid request: data.stats is required' }
   }
 
+  // Parse and validate optional template
+  let template: Partial<VideoTemplate> | undefined
+  if (queryTemplate && queryTemplate.trim() !== '') {
+    try {
+      const decodedTemplate = decodeURIComponent(queryTemplate)
+      const parsedTemplate = JSON.parse(decodedTemplate)
+
+      // Validate and sanitize the template
+      const validationResult = validateTemplate(parsedTemplate)
+      if (validationResult.warnings.length > 0) {
+        console.log(`[Validation] Template warnings: ${validationResult.warnings.join(', ')}`)
+      }
+
+      // Use the sanitized template (but pass the partial, not resolved)
+      // The resolution happens later in the composition
+      template = parsedTemplate as Partial<VideoTemplate>
+    } catch {
+      return { valid: false, error: 'Invalid JSON in template parameter' }
+    }
+  }
+
   // All validations passed - construct the RenderRequest
+  const result: RenderRequest = {
+    userId: queryUserId,
+    data: parsedData as MonthlyRecapExport,
+  }
+
+  if (template) {
+    result.template = template
+  }
+
   return {
     valid: true,
-    data: {
-      userId: queryUserId,
-      data: parsed as MonthlyRecapExport,
-    },
+    data: result,
   }
 }

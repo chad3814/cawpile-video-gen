@@ -5,20 +5,24 @@ import {
   useVideoConfig,
   spring,
 } from 'remotion'
-import { COLORS, FONTS, TIMING } from '../../lib/theme'
+import { useColors, useFonts, useTiming, useSequenceConfig } from '../../lib/TemplateContext'
 import { fadeIn, fadeOut, pulse } from '../../lib/animations'
 import { KineticText } from '../../components/KineticText'
 
 export const OutroSequence: React.FC = () => {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
+  const colors = useColors()
+  const fonts = useFonts()
+  const timing = useTiming()
+  const config = useSequenceConfig('outro')
 
   // Overall fade
-  const fadeInOpacity = fadeIn(frame, 0, TIMING.outroFadeIn)
+  const fadeInOpacity = fadeIn(frame, 0, timing.outroFadeIn)
   const fadeOutOpacity = fadeOut(
     frame,
-    TIMING.outroTotal - TIMING.outroFadeOut,
-    TIMING.outroFadeOut
+    timing.outroTotal - timing.outroFadeOut,
+    timing.outroFadeOut
   )
   const opacity = Math.min(fadeInOpacity, fadeOutOpacity)
 
@@ -32,80 +36,228 @@ export const OutroSequence: React.FC = () => {
     config: { damping: 12, stiffness: 150, mass: 0.6 },
   })
 
-  return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: COLORS.background,
-        opacity,
-      }}
-    >
-      {/* Background gradient */}
-      <AbsoluteFill
-        style={{
-          background: `radial-gradient(circle at 50% 50%, ${COLORS.accent}10 0%, transparent 60%)`,
-        }}
-      />
-
-      <AbsoluteFill
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 40,
-        }}
-      >
-        {/* Logo/Brand */}
-        <div
+  // Render based on layout
+  switch (config.layout) {
+    case 'minimal':
+      return (
+        <AbsoluteFill
           style={{
-            transform: `scale(${logoScale * pulseScale})`,
+            backgroundColor: colors.background,
+            opacity,
           }}
         >
-          <div
+          <AbsoluteFill
             style={{
-              fontFamily: FONTS.heading,
-              fontSize: 80,
-              fontWeight: 900,
-              color: COLORS.accent,
-              letterSpacing: -2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            cawpile
-          </div>
-        </div>
+            <div
+              style={{
+                transform: `scale(${logoScale})`,
+                fontFamily: fonts.heading,
+                fontSize: 60,
+                fontWeight: 900,
+                color: colors.accent,
+                letterSpacing: -2,
+              }}
+            >
+              cawpile
+            </div>
+          </AbsoluteFill>
+        </AbsoluteFill>
+      )
 
-        {/* Tagline */}
-        <div
+    case 'branded':
+      return (
+        <AbsoluteFill
           style={{
-            opacity: fadeIn(frame, 20, 15),
+            backgroundColor: colors.background,
+            opacity,
           }}
         >
-          <KineticText
-            text="Track Your Reading Journey"
-            startFrame={25}
-            style="fadeUp"
-            fontSize={28}
-            color={COLORS.textSecondary}
-            fontWeight={400}
-            letterSpacing={2}
+          {/* Background gradient */}
+          <AbsoluteFill
+            style={{
+              background: `radial-gradient(circle at 50% 50%, ${colors.accent}20 0%, transparent 60%)`,
+            }}
           />
-        </div>
 
-        {/* Website */}
-        <div
+          <AbsoluteFill
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 30,
+            }}
+          >
+            {/* Logo/Brand with pulse */}
+            <div
+              style={{
+                transform: `scale(${logoScale * pulseScale})`,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: fonts.heading,
+                  fontSize: 100,
+                  fontWeight: 900,
+                  color: colors.accent,
+                  letterSpacing: -2,
+                }}
+              >
+                cawpile
+              </div>
+            </div>
+
+            {/* Tagline */}
+            <div
+              style={{
+                opacity: fadeIn(frame, 20, 15),
+              }}
+            >
+              <KineticText
+                text="Track Your Reading Journey"
+                startFrame={25}
+                style="fadeUp"
+                fontSize={32}
+                color={colors.textSecondary}
+                fontWeight={400}
+                letterSpacing={2}
+              />
+            </div>
+
+            {/* Custom text if provided */}
+            {config.customText && (
+              <div
+                style={{
+                  marginTop: 20,
+                  opacity: fadeIn(frame, 40, 10),
+                  fontFamily: fonts.body,
+                  fontSize: 24,
+                  color: colors.textMuted,
+                  textAlign: 'center',
+                  maxWidth: 600,
+                }}
+              >
+                {config.customText}
+              </div>
+            )}
+
+            {/* Website */}
+            <div
+              style={{
+                marginTop: 40,
+                opacity: fadeIn(frame, 35, 10),
+                fontFamily: fonts.mono,
+                fontSize: 28,
+                color: colors.textMuted,
+              }}
+            >
+              cawpile.org
+            </div>
+          </AbsoluteFill>
+        </AbsoluteFill>
+      )
+
+    case 'centered':
+    default:
+      return (
+        <AbsoluteFill
           style={{
-            marginTop: 40,
-            opacity: fadeIn(frame, 35, 10),
-            fontFamily: FONTS.mono,
-            fontSize: 24,
-            color: COLORS.textMuted,
+            backgroundColor: colors.background,
+            opacity,
           }}
         >
-          cawpile.org
-        </div>
-      </AbsoluteFill>
-    </AbsoluteFill>
-  )
+          {/* Background gradient */}
+          <AbsoluteFill
+            style={{
+              background: `radial-gradient(circle at 50% 50%, ${colors.accent}10 0%, transparent 60%)`,
+            }}
+          />
+
+          <AbsoluteFill
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 40,
+            }}
+          >
+            {/* Logo/Brand */}
+            {config.showBranding && (
+              <div
+                style={{
+                  transform: `scale(${logoScale * pulseScale})`,
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: fonts.heading,
+                    fontSize: 80,
+                    fontWeight: 900,
+                    color: colors.accent,
+                    letterSpacing: -2,
+                  }}
+                >
+                  cawpile
+                </div>
+              </div>
+            )}
+
+            {/* Tagline */}
+            <div
+              style={{
+                opacity: fadeIn(frame, 20, 15),
+              }}
+            >
+              <KineticText
+                text="Track Your Reading Journey"
+                startFrame={25}
+                style="fadeUp"
+                fontSize={28}
+                color={colors.textSecondary}
+                fontWeight={400}
+                letterSpacing={2}
+              />
+            </div>
+
+            {/* Custom text if provided */}
+            {config.customText && (
+              <div
+                style={{
+                  marginTop: 10,
+                  opacity: fadeIn(frame, 40, 10),
+                  fontFamily: fonts.body,
+                  fontSize: 22,
+                  color: colors.textMuted,
+                  textAlign: 'center',
+                  maxWidth: 600,
+                }}
+              >
+                {config.customText}
+              </div>
+            )}
+
+            {/* Website */}
+            <div
+              style={{
+                marginTop: 40,
+                opacity: fadeIn(frame, 35, 10),
+                fontFamily: fonts.mono,
+                fontSize: 24,
+                color: colors.textMuted,
+              }}
+            >
+              cawpile.org
+            </div>
+          </AbsoluteFill>
+        </AbsoluteFill>
+      )
+  }
 }
 
 export default OutroSequence

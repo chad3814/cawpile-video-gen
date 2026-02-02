@@ -1,6 +1,6 @@
 import React from 'react'
 import { AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate } from 'remotion'
-import { COLORS, TIMING } from '../../lib/theme'
+import { useColors, useTiming, useSequenceConfig } from '../../lib/TemplateContext'
 import { KineticText } from '../../components/KineticText'
 import { fadeIn, fadeOut } from '../../lib/animations'
 
@@ -10,35 +10,41 @@ interface IntroSequenceProps {
   bookCount: number
 }
 
-export const IntroSequence: React.FC<IntroSequenceProps> = ({
+/**
+ * Centered layout - default layout with centered text
+ */
+const CenteredLayout: React.FC<IntroSequenceProps & { colors: ReturnType<typeof useColors>; timing: ReturnType<typeof useTiming>; config: ReturnType<typeof useSequenceConfig<'intro'>> }> = ({
   monthName,
   year,
   bookCount,
+  colors,
+  timing,
+  config,
 }) => {
   const frame = useCurrentFrame()
   useVideoConfig()
 
   // Fade in at start, fade out at end
-  const fadeInOpacity = fadeIn(frame, 0, TIMING.introFadeIn)
-  const fadeOutOpacity = fadeOut(frame, TIMING.introTotal - TIMING.introFadeOut, TIMING.introFadeOut)
+  const fadeInOpacity = fadeIn(frame, 0, timing.introFadeIn)
+  const fadeOutOpacity = fadeOut(frame, timing.introTotal - timing.introFadeOut, timing.introFadeOut)
   const opacity = Math.min(fadeInOpacity, fadeOutOpacity)
 
   // Subtle background animation
-  const bgScale = interpolate(frame, [0, TIMING.introTotal], [1.05, 1], {
+  const bgScale = interpolate(frame, [0, timing.introTotal], [1.05, 1], {
     extrapolateRight: 'clamp',
   })
 
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: COLORS.background,
+        backgroundColor: colors.background,
         opacity,
       }}
     >
       {/* Animated gradient background */}
       <AbsoluteFill
         style={{
-          background: `radial-gradient(ellipse at 50% 30%, ${COLORS.backgroundTertiary} 0%, ${COLORS.background} 70%)`,
+          background: `radial-gradient(ellipse at 50% 30%, ${colors.backgroundTertiary} 0%, ${colors.background} 70%)`,
           transform: `scale(${bgScale})`,
         }}
       />
@@ -69,7 +75,7 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({
             startFrame={5}
             style="fadeUp"
             fontSize={32}
-            color={COLORS.accent}
+            color={colors.accent}
             fontWeight={600}
             letterSpacing={8}
           />
@@ -80,24 +86,26 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({
           text={monthName.toUpperCase()}
           startFrame={15}
           style="slam"
-          fontSize={120}
-          color={COLORS.textPrimary}
+          fontSize={config.titleFontSize}
+          color={colors.textPrimary}
           fontWeight={900}
           letterSpacing={-4}
         />
 
         {/* Year */}
-        <div style={{ marginTop: 20 }}>
-          <KineticText
-            text={year.toString()}
-            startFrame={25}
-            style="fadeUp"
-            fontSize={64}
-            color={COLORS.textSecondary}
-            fontWeight={300}
-            letterSpacing={12}
-          />
-        </div>
+        {config.showYear && (
+          <div style={{ marginTop: 20 }}>
+            <KineticText
+              text={year.toString()}
+              startFrame={25}
+              style="fadeUp"
+              fontSize={config.subtitleFontSize}
+              color={colors.textSecondary}
+              fontWeight={300}
+              letterSpacing={12}
+            />
+          </div>
+        )}
 
         {/* Book count teaser */}
         <div style={{ marginTop: 80 }}>
@@ -106,7 +114,7 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({
             startFrame={40}
             style="scaleIn"
             fontSize={36}
-            color={COLORS.textMuted}
+            color={colors.textMuted}
             fontWeight={500}
             letterSpacing={4}
           />
@@ -114,6 +122,187 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({
       </AbsoluteFill>
     </AbsoluteFill>
   )
+}
+
+/**
+ * Split layout - text split across screen areas
+ */
+const SplitLayout: React.FC<IntroSequenceProps & { colors: ReturnType<typeof useColors>; timing: ReturnType<typeof useTiming>; config: ReturnType<typeof useSequenceConfig<'intro'>> }> = ({
+  monthName,
+  year,
+  bookCount,
+  colors,
+  timing,
+  config,
+}) => {
+  const frame = useCurrentFrame()
+  useVideoConfig()
+
+  const fadeInOpacity = fadeIn(frame, 0, timing.introFadeIn)
+  const fadeOutOpacity = fadeOut(frame, timing.introTotal - timing.introFadeOut, timing.introFadeOut)
+  const opacity = Math.min(fadeInOpacity, fadeOutOpacity)
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: colors.background,
+        opacity,
+      }}
+    >
+      {/* Top section */}
+      <AbsoluteFill
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          justifyContent: 'flex-start',
+          padding: 80,
+        }}
+      >
+        <KineticText
+          text="READING RECAP"
+          startFrame={5}
+          style="fadeUp"
+          fontSize={28}
+          color={colors.accent}
+          fontWeight={600}
+          letterSpacing={8}
+        />
+      </AbsoluteFill>
+
+      {/* Center section */}
+      <AbsoluteFill
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <KineticText
+          text={monthName.toUpperCase()}
+          startFrame={15}
+          style="slam"
+          fontSize={config.titleFontSize}
+          color={colors.textPrimary}
+          fontWeight={900}
+          letterSpacing={-4}
+        />
+        {config.showYear && (
+          <div style={{ marginTop: 20 }}>
+            <KineticText
+              text={year.toString()}
+              startFrame={25}
+              style="fadeUp"
+              fontSize={config.subtitleFontSize}
+              color={colors.textSecondary}
+              fontWeight={300}
+              letterSpacing={12}
+            />
+          </div>
+        )}
+      </AbsoluteFill>
+
+      {/* Bottom section */}
+      <AbsoluteFill
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          justifyContent: 'flex-end',
+          padding: 80,
+        }}
+      >
+        <KineticText
+          text={`${bookCount} ${bookCount === 1 ? 'BOOK' : 'BOOKS'}`}
+          startFrame={40}
+          style="scaleIn"
+          fontSize={36}
+          color={colors.textMuted}
+          fontWeight={500}
+          letterSpacing={4}
+        />
+      </AbsoluteFill>
+    </AbsoluteFill>
+  )
+}
+
+/**
+ * Minimal layout - reduced visual elements
+ */
+const MinimalLayout: React.FC<IntroSequenceProps & { colors: ReturnType<typeof useColors>; timing: ReturnType<typeof useTiming>; config: ReturnType<typeof useSequenceConfig<'intro'>> }> = ({
+  monthName,
+  year,
+  bookCount: _bookCount, // Intentionally unused in minimal layout
+  colors,
+  timing,
+  config,
+}) => {
+  const frame = useCurrentFrame()
+  useVideoConfig()
+
+  const fadeInOpacity = fadeIn(frame, 0, timing.introFadeIn)
+  const fadeOutOpacity = fadeOut(frame, timing.introTotal - timing.introFadeOut, timing.introFadeOut)
+  const opacity = Math.min(fadeInOpacity, fadeOutOpacity)
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: colors.background,
+        opacity,
+      }}
+    >
+      <AbsoluteFill
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <KineticText
+          text={monthName.toUpperCase()}
+          startFrame={10}
+          style="fadeUp"
+          fontSize={config.titleFontSize * 0.8}
+          color={colors.textPrimary}
+          fontWeight={700}
+          letterSpacing={0}
+        />
+        {config.showYear && (
+          <div style={{ marginTop: 10 }}>
+            <KineticText
+              text={year.toString()}
+              startFrame={20}
+              style="fadeUp"
+              fontSize={config.subtitleFontSize * 0.8}
+              color={colors.textMuted}
+              fontWeight={300}
+              letterSpacing={4}
+            />
+          </div>
+        )}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  )
+}
+
+export const IntroSequence: React.FC<IntroSequenceProps> = (props) => {
+  const colors = useColors()
+  const timing = useTiming()
+  const config = useSequenceConfig('intro')
+
+  const layoutProps = { ...props, colors, timing, config }
+
+  switch (config.layout) {
+    case 'split':
+      return <SplitLayout {...layoutProps} />
+    case 'minimal':
+      return <MinimalLayout {...layoutProps} />
+    case 'centered':
+    default:
+      return <CenteredLayout {...layoutProps} />
+  }
 }
 
 export default IntroSequence
